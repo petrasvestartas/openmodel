@@ -1,0 +1,20 @@
+[package]
+name = "openmodel"
+version = "0.1.0"
+edition = "2021"
+authors = ["Petras Vestartas petrasvestartas@gmail.com>"]
+description = "Geometry library for structures."
+license = "MIT"
+repository = "https://github.com/petrasvestartas/openmodel"
+homepage = "https://vestartas.com/"
+documentation = "https://docs.rs/openmodel"
+readme = "README.md"
+keywords = ["statics", "structures", "geometry"]
+categories = ["algorithms", "data-structures"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
