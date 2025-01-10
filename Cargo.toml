@@ -14,6 +14,14 @@ categories = ["algorithms", "data-structures"]
 
 [dependencies]
 
+[lib]
+name = "openmodel"
+path = "src/lib.rs"
+
+[[bin]]
+name = "openmodel_bin"
+path = "src/main.rs"
+
 [dev-dependencies]
 
 [package.metadata.docs.rs]

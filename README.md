@@ -26,9 +26,10 @@ cargo --version
 cargo new <projectname>
 ```
 
-### Run a project
+### Run a project or specific binary
 ```bash
 cargo run
+cargo run --bin openmodel_bin
 ```
 
 ### Run a project without Debug Info
@@ -68,4 +69,9 @@ cargo publish
 ```bash
 rustup component add rustfmt
 cargo fmt
+```
+
+### Step 7 - Test
+```bash
+cargo test
 ```
