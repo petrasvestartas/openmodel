@@ -1,4 +1,4 @@
-use openmodel::vector::Vector;
+use openmodel::geometry::Vector;
 
 #[test]
 fn test_new() {

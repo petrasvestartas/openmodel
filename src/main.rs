@@ -1,5 +1,4 @@
-pub mod point; // Declare the submodule
-use point::Point; // Import the Point struct
+use openmodel::geometry::{Point};
 
 fn main() {
     let mut p = Point::new(1.0, 2.0, 3.0);

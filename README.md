@@ -75,3 +75,44 @@ cargo fmt
 ```bash
 cargo test
 ```
+
+### Step 8 - Submodules
+
+
+```bash
+openmodel/
+├── Cargo.toml
+└── src/
+    ├── lib.rs
+    ├── main.rs
+    ├── geometry/
+    │   ├── mod.rs
+    │   ├── point.rs
+    │   └── vector.rs
+```
+
+Declare the geometry module in the main library file: src/lib.rs
+
+
+```rust
+pub mod geometry;
+```
+
+Declare the submodules point and vector in the geometry module: src/geometry/mod.rs
+
+
+```rust
+pub mod point;
+pub mod vector;
+
+pub use point::Point;
+pub use vector::Vector;
+```
+
+Define the Point and Vector struct and its implementation: src/geometry/point.rs, src/geometry/vector.rs
+
+Use the Point and Vector structs from the geometry module:
+
+```rust
+use openmodel::geometry::{Point, Vector};
+```

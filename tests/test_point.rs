@@ -1,4 +1,4 @@
-use openmodel::point::Point;
+use openmodel::geometry::Point;
 
 #[test]
 fn test_new() {

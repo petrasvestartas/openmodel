@@ -21,7 +21,7 @@ impl Vector {
     /// # Example
     ///
     /// ```
-    /// use openmodel::vector::Vector;
+    /// use openmodel::geometry::Vector;
     /// let v = Vector::new(1.0, 2.0, 3.0);
     /// ```
     pub fn new(x: f64, y: f64, z: f64) -> Vector {
@@ -33,7 +33,7 @@ impl Vector {
     /// # Example
     ///
     /// ```
-    /// use openmodel::vector::Vector;
+    /// use openmodel::geometry::Vector;
     /// let v = Vector::new(1.0, 2.0, 2.0);
     /// assert_eq!(v.length(), 3.0);
     /// ```

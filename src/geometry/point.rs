@@ -20,7 +20,7 @@ impl Point {
     /// # Example
     ///
     /// ```
-    /// use openmodel::point::Point;
+    /// use openmodel::geometry::Point;
     /// let v = Point::new(1.0, 2.0, 3.0);
     /// ```
     pub fn new(x: f64, y: f64, z: f64) -> Point {
@@ -36,7 +36,7 @@ impl Point {
     /// # Example
     ///
     /// ```
-    /// use openmodel::point::Point;
+    /// use openmodel::geometry::Point;
     /// let p1 = Point::new(1.0, 2.0, 2.0);
     /// let p2 = Point::new(4.0, 6.0, 6.0);
     /// ```
@@ -56,7 +56,7 @@ impl Point {
     /// # Example
     ///
     /// ```
-    /// use openmodel::point::Point;
+    /// use openmodel::geometry::Point;
     /// let mut p = Point::new(1.0, 2.0, 2.0);
     /// p.translate(1.0, 2.0, 3.0);
     /// assert_eq!(p.x, 2.0);
@@ -81,7 +81,7 @@ impl Point {
     /// # Example
     ///
     /// ```
-    /// use openmodel::point::Point;
+    /// use openmodel::geometry::Point;
     /// let p = Point::new(1.0, 2.0, 2.0);
     /// let p2 = p.translated(1.0, 2.0, 3.0);
     /// assert_eq!(p2.x, 2.0);
