@@ -91,14 +91,14 @@ openmodel/
     │   └── vector.rs
 ```
 
-Declare the geometry module in the main library file: src/lib.rs
+Declare the geometry module in the main library file: `src/lib.rs`
 
 
 ```rust
 pub mod geometry;
 ```
 
-Declare the submodules point and vector in the geometry module: src/geometry/mod.rs
+Declare the submodules point and vector in the geometry module: `src/geometry/mod.rs`
 
 
 ```rust
@@ -109,7 +109,7 @@ pub use point::Point;
 pub use vector::Vector;
 ```
 
-Define the Point and Vector struct and its implementation: src/geometry/point.rs, src/geometry/vector.rs
+Define the Point and Vector struct and its implementation: `src/geometry/point.rs`, `src/geometry/vector.rs`
 
 Use the Point and Vector structs from the geometry module:
 
