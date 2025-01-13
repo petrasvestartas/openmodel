@@ -1,6 +1,7 @@
 use crate::geometry::Point;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Vector
+use crate::common::Data; // For including Data
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector {
@@ -10,11 +11,13 @@ pub struct Vector {
     pub y: f64,
     /// The z component of the vector.
     pub z: f64,
+    /// The data associated with the point.
+    pub data: Data,
 }
 
 #[allow(dead_code)]
 impl Vector {
-    /// Creates a new `Vector`.
+    /// Creates a new `Vector` with default `Data`.
     ///
     /// # Arguments
     ///
@@ -28,9 +31,39 @@ impl Vector {
     /// use openmodel::geometry::Vector;
     /// let v = Vector::new(1.0, 2.0, 3.0);
     /// ```
-    pub fn new(x: f64, y: f64, z: f64) -> Vector {
-        Vector { x, y, z }
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Vector {
+            x,
+            y,
+            z,
+            data: Data::with_name("Vector"),
+        }
     }
+
+    /// Creates a new `Vector` with a specified name for `Data`.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name for the `Data`.
+    /// * `x` - The x component.
+    /// * `y` - The y component.
+    /// * `z` - The z component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::with_name("MyVector".to_string(), 1.0, 2.0, 3.0);
+    /// ```
+    pub fn with_name(name: String, x: f64, y: f64, z: f64) -> Self {
+        Vector {
+            x,
+            y,
+            z,
+            data: Data::with_name(&name),
+        }
+    }
+
 
     /// Computes the length (magnitude) of the vector.
     ///
@@ -53,6 +86,7 @@ impl Default for Vector {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+            data: Data::with_name("Vector"),
         }
     }
 }
@@ -148,6 +182,7 @@ impl From<Point> for Vector {
             x: point.x,
             y: point.y,
             z: point.z,
+            data: Data::with_name("Vector"),
         }
     }
 }
@@ -327,6 +362,7 @@ impl Add<&Point> for Vector {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -356,6 +392,7 @@ impl Sub<&Point> for Vector {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
+            data: Data::with_name("Vector"),
         }
     }
 }

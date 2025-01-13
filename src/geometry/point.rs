@@ -1,6 +1,8 @@
 use crate::geometry::Vector;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Point
+use crate::common::Data; // For including Data
+use std::fmt; // For printing
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Point {
@@ -10,17 +12,19 @@ pub struct Point {
     pub y: f64,
     /// The z coordinate of the point.
     pub z: f64,
+    /// The data associated with the point.
+    pub data: Data,
 }
 
 #[allow(dead_code)]
 impl Point {
-    /// Creates a new `Vector`.
+    /// Creates a new `Point` with default `Data`.
     ///
     /// # Arguments
     ///
-    /// * `x` - The x coordinate.
-    /// * `y` - The y coordinate.
-    /// * `z` - The z coordinate.
+    /// * `x` - The x component.
+    /// * `y` - The y component.
+    /// * `z` - The z component.
     ///
     /// # Example
     ///
@@ -28,8 +32,37 @@ impl Point {
     /// use openmodel::geometry::Point;
     /// let v = Point::new(1.0, 2.0, 3.0);
     /// ```
-    pub fn new(x: f64, y: f64, z: f64) -> Point {
-        Point { x, y, z }
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Point {
+            x,
+            y,
+            z,
+            data: Data::with_name("Point"),
+        }
+    }
+
+    /// Creates a new `Point` with a specified name for `Data`.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name for the `Data`.
+    /// * `x` - The x component.
+    /// * `y` - The y component.
+    /// * `z` - The z component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let v = Point::with_name("MyPoint".to_string(), 1.0, 2.0, 3.0);
+    /// ```
+    pub fn with_name(name: String, x: f64, y: f64, z: f64) -> Self {
+        Point {
+            x,
+            y,
+            z,
+            data: Data::new(&name),
+        }
     }
 
     /// Computes the distance between two points.
@@ -97,6 +130,7 @@ impl Point {
             x: self.x + dx,
             y: self.y + dy,
             z: self.z + dz,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -118,6 +152,7 @@ impl Default for Point {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -213,6 +248,7 @@ impl From<Vector> for Point {
             x: vector.x,
             y: vector.y,
             z: vector.z,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -392,6 +428,7 @@ impl Add<&Vector> for Point {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -421,6 +458,7 @@ impl Sub<&Vector> for Point {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
+            data: Data::with_name("Point"),
         }
     }
 }
@@ -465,5 +503,11 @@ impl PartialOrd for Point {
             self.distance(&Point::default())
                 .partial_cmp(&other.distance(&Point::default()))?,
         )
+    }
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Point {{ x: {}, y: {}, z: {}, data: {} }}", self.x, self.y, self.z, self.data)
     }
 }
