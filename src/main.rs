@@ -1,4 +1,4 @@
-use openmodel::geometry::{Point};
+use openmodel::geometry::Point;
 
 fn main() {
     let mut p = Point::new(1.0, 2.0, 3.0);

@@ -1,7 +1,8 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Index, IndexMut}; // For operator overloading
-use crate::geometry::Point; // For conversion to Vector
+use crate::geometry::Point;
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Vector
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector {
     /// The x component of the vector.
     pub x: f64,
@@ -55,7 +56,6 @@ impl Default for Vector {
         }
     }
 }
-
 
 impl Index<usize> for Vector {
     type Output = f64;

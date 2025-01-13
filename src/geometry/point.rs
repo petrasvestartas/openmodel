@@ -1,7 +1,8 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Index, IndexMut}; // For operator overloading
-use crate::geometry::Vector; // For conversion to Point
+use crate::geometry::Vector;
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Point
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Point {
     /// The x coordinate of the point.
     pub x: f64,
@@ -73,7 +74,6 @@ impl Point {
         self.z += dz;
     }
 
-
     /// Returns a new point translated by the given amounts.
     ///
     /// # Arguments
@@ -100,7 +100,6 @@ impl Point {
         }
     }
 }
-
 
 impl Default for Point {
     /// Creates a default `Point` with all coordinates set to 0.0.
@@ -188,7 +187,6 @@ impl IndexMut<usize> for Point {
     }
 }
 
-
 /// Converts a `Vector` into a `Point`.
 ///
 /// This implementation allows a `Vector` to be converted into a `Point`
@@ -218,7 +216,6 @@ impl From<Vector> for Point {
         }
     }
 }
-
 
 impl MulAssign<f64> for Point {
     /// Multiplies the coordinates of the point by a scalar.
@@ -464,6 +461,9 @@ impl PartialOrd for Point {
     /// assert!(p1 < p2);
     /// ```
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.distance(&Point::default()).partial_cmp(&other.distance(&Point::default()))?)
+        Some(
+            self.distance(&Point::default())
+                .partial_cmp(&other.distance(&Point::default()))?,
+        )
     }
 }

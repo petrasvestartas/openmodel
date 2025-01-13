@@ -48,3 +48,16 @@ fn test_operators() {
     assert_eq!(p[1], 2.4);
     assert_eq!(p[2], 3.0);
 }
+
+#[test]
+fn test_point_serialization() {
+    let p = Point::new(1.0, 2.0, 3.0);
+
+    // Serialize the vector to a JSON string
+    let serialized = serde_json::to_string(&p).unwrap();
+    assert_eq!(serialized, r#"{"x":1.0,"y":2.0,"z":3.0}"#);
+
+    // Deserialize the JSON string back to a vector
+    let deserialized: Point = serde_json::from_str(&serialized).unwrap();
+    assert_eq!(deserialized, p);
+}
