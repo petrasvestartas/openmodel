@@ -40,3 +40,11 @@ fn test_default() {
     assert_eq!(p.y, 0.0);
     assert_eq!(p.z, 0.0);
 }
+
+#[test]
+fn test_operators() {
+    let p = Point::new(5.0, 2.4, 3.0);
+    assert_eq!(p[0], 5.0);
+    assert_eq!(p[1], 2.4);
+    assert_eq!(p[2], 3.0);
+}

@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 pub struct Point {
     /// The x coordinate of the point.
     pub x: f64,
@@ -97,12 +99,89 @@ impl Point {
     }
 }
 
+
 impl Default for Point {
+    /// Creates a default `Point` with all coordinates set to 0.0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let p = Point::default();
+    /// assert_eq!(p.x, 0.0);
+    /// assert_eq!(p.y, 0.0);
+    /// assert_eq!(p.z, 0.0);
+    /// ```
     fn default() -> Self {
         Point {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+        }
+    }
+}
+
+impl Index<usize> for Point {
+    type Output = f64;
+
+    /// Provides read-only access to the coordinates of the point using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// assert_eq!(p[0], 1.0);
+    /// assert_eq!(p[1], 2.0);
+    /// assert_eq!(p[2], 3.0);
+    /// ```
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Point {
+    /// Provides mutable access to the coordinates of the point using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let mut p = Point::new(1.0, 2.0, 3.0);
+    /// p[0] = 4.0;
+    /// p[1] = 5.0;
+    /// p[2] = 6.0;
+    /// assert_eq!(p[0], 4.0);
+    /// assert_eq!(p[1], 5.0);
+    /// assert_eq!(p[2], 6.0);
+    /// ```
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Index out of bounds"),
         }
     }
 }

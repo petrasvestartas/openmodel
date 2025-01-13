@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 /// A 3D vector.
 pub struct Vector {
     /// The x component of the vector.
@@ -49,6 +51,72 @@ impl Default for Vector {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+        }
+    }
+}
+
+
+impl Index<usize> for Vector {
+    type Output = f64;
+
+    /// Provides read-only access to the coordinates of the Vector using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let p = Vector::new(1.0, 2.0, 3.0);
+    /// assert_eq!(p[0], 1.0);
+    /// assert_eq!(p[1], 2.0);
+    /// assert_eq!(p[2], 3.0);
+    /// ```
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vector {
+    /// Provides mutable access to the coordinates of the Vector using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let mut p = Vector::new(1.0, 2.0, 3.0);
+    /// p[0] = 4.0;
+    /// p[1] = 5.0;
+    /// p[2] = 6.0;
+    /// assert_eq!(p[0], 4.0);
+    /// assert_eq!(p[1], 5.0);
+    /// assert_eq!(p[2], 6.0);
+    /// ```
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Index out of bounds"),
         }
     }
 }
