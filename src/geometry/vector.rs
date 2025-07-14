@@ -1,8 +1,8 @@
 use crate::geometry::Point;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Vector
-use crate::common::Data; // For including Data
-use std::fmt; // For printing
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use crate::common::Data;
+use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector {
@@ -12,7 +12,7 @@ pub struct Vector {
     pub y: f64,
     /// The z component of the vector.
     pub z: f64,
-    /// The data associated with the point.
+    /// Associated data - guid and name.
     pub data: Data,
 }
 
