@@ -34,11 +34,19 @@ impl Line{
     /// * `x1` - The x components of the end point.
     /// * `y1` - The y components of the end point.
     /// * `z1` - The z components of the end point.
+    ///
     /// # Example
     ///
     /// ```
     /// use openmodel::geometry::Line;
     /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// assert_eq!(line.x0, 0.0);
+    /// assert_eq!(line.y0, 0.0);
+    /// assert_eq!(line.z0, 0.0);
+    /// assert_eq!(line.x1, 0.0);
+    /// assert_eq!(line.y1, 0.0);
+    /// assert_eq!(line.z1, 1.0);
+    /// 
     /// ```
     pub fn new(x0: f64, y0: f64, z0:f64, x1: f64, y1: f64, z1:f64) -> Self {
         Line {
@@ -69,6 +77,12 @@ impl Line{
     /// ```
     /// use openmodel::geometry::Line;
     /// let line = Line::with_name("MyLine".to_string(), 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// assert_eq!(line.x0, 0.0);
+    /// assert_eq!(line.y0, 0.0);
+    /// assert_eq!(line.z0, 0.0);
+    /// assert_eq!(line.x1, 0.0);
+    /// assert_eq!(line.y1, 0.0);
+    /// assert_eq!(line.z1, 1.0);
     /// ```
     pub fn with_name(name: String, x0: f64, y0: f64, z0: f64, x1: f64, y1: f64, z1: f64) -> Self {
         Line {
@@ -96,6 +110,12 @@ impl Line{
     /// let p0 = Point::new(0.0, 0.0, 0.0);
     /// let p1 = Point::new(0.0, 0.0, 1.0);
     /// let line = Line::from_points(&p0, &p1);
+    /// assert_eq!(line.x0, 0.0);
+    /// assert_eq!(line.y0, 0.0);
+    /// assert_eq!(line.z0, 0.0);
+    /// assert_eq!(line.x1, 0.0);
+    /// assert_eq!(line.y1, 0.0);
+    /// assert_eq!(line.z1, 1.0);
     /// ```
     pub fn from_points(p0: &Point, p1: &Point) -> Self{
         Line {
@@ -118,61 +138,11 @@ impl Line{
     /// use openmodel::geometry::Line;
     /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// let length = line.length();
+    /// assert_eq!(length, 1.0);
     /// ```
     pub fn length(&self) -> f64 {
         ((self.x0 - self.x1).powi(2) + (self.y0 - self.y1).powi(2) + (self.z0 - self.z1).powi(2))
             .sqrt()
-    }
-
-    /// Translates the line by the given amounts.
-    ///
-    /// # Arguments
-    ///
-    /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction.
-    /// * `dz` - The offset in the z direction.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Line;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// line.translate(1.0, 2.0, 3.0);
-    /// ```
-    pub fn translate(&mut self, dx: f64, dy: f64, dz: f64) {
-        self.x0 += dx;
-        self.y0 += dy;
-        self.z0 += dz;
-        self.x1 += dx;
-        self.y1 += dy;
-        self.z1 += dz;
-    }
-
-    /// Returns a new point translated by the given amounts.
-    ///
-    /// # Arguments
-    ///
-    /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction.
-    /// * `dz` - The offset in the z direction.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Line;
-    /// let line0 = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// let line1 = line0.translated(1.0, 2.0, 3.0);
-    /// ```
-    pub fn translated(&self, dx: f64, dy: f64, dz: f64) -> Line {
-        Line {
-            x0: self.x0 + dx,
-            y0: self.y0 + dy,
-            z0: self.z0 + dz,
-            x1: self.x1 + dx,
-            y1: self.y1 + dy,
-            z1: self.z1 + dz,
-            data: Data::with_name("Line"),
-        }
     }
 }
 
@@ -197,7 +167,6 @@ impl Default for Line{
         }
     }
 }
-
 
 impl Add<&Vector> for Line {
     type Output = Line;
@@ -235,7 +204,6 @@ impl Add<&Vector> for Line {
     }
 }
 
-
 impl AddAssign<&Vector> for Line {
     /// Adds the coordinates of a vector to this line.
     ///
@@ -268,7 +236,6 @@ impl AddAssign<&Vector> for Line {
     }
 }
 
-
 impl Div<f64> for Line {
     type Output = Line;
 
@@ -297,7 +264,6 @@ impl Div<f64> for Line {
         result
     }
 }
-
 
 impl DivAssign<f64> for Line {
     /// Divides the coordinates of the Line by a scalar.
@@ -328,7 +294,6 @@ impl DivAssign<f64> for Line {
         self.z1 /= factor;
     }
 }
-
 
 impl Index<usize> for Line {
     type Output = f64;
@@ -367,7 +332,6 @@ impl Index<usize> for Line {
         }
     }
 }
-
 
 impl IndexMut<usize> for Line {
     /// Provides mutable access to the coordinates of the line using the `[]` operator.
@@ -412,7 +376,6 @@ impl IndexMut<usize> for Line {
     }
 }
 
-
 impl MulAssign<f64> for Line {
     /// Multiplies the coordinates of the line by a scalar.
     ///
@@ -443,7 +406,6 @@ impl MulAssign<f64> for Line {
     }
 }
 
-
 impl Mul<f64> for Line {
     type Output = Line;
 
@@ -472,7 +434,6 @@ impl Mul<f64> for Line {
         result
     }
 }
-
 
 impl Sub<&Vector> for Line {
     type Output = Line;
@@ -542,24 +503,23 @@ impl SubAssign<&Vector> for Line {
     }
 }
 
-
-/// Converts a `Line` into a `Vector`.
-///
-/// # Arguments
-///
-/// * `line` - The `Line` to be converted.
-///
-/// # Example
-///
-/// ```
-/// use openmodel::geometry::{Line, Vector};
-/// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-/// let v: Vector = line.into();
-/// assert_eq!(v.x, 0.0);
-/// assert_eq!(v.y, 0.0);
-/// assert_eq!(v.z, 1.0);
-/// ```
 impl From<Line> for Vector {
+    /// Converts a `Line` into a `Vector`.
+    ///
+    /// # Arguments
+    ///
+    /// * `line` - The `Line` to be converted.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Line, Vector};
+    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let v: Vector = line.into();
+    /// assert_eq!(v.x, 0.0);
+    /// assert_eq!(v.y, 0.0);
+    /// assert_eq!(v.z, 1.0);
+    /// ```
     fn from(line: Line) -> Self {
         Vector {
             x: line.x1 - line.x0,
@@ -571,7 +531,15 @@ impl From<Line> for Vector {
 }
 
 impl fmt::Display for Line{
+    /// Log line.
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Line;
+    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// println!("{}", line);
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Line {{ start: {}, {}, {}, end {}, {}, {}, data: {} }}", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1, self.data)
+        write!(f, "Line {{ start: {}, {}, {}, end {}, {}, {}, Data: {} }}", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1, self.data)
     }
 }

@@ -16,7 +16,6 @@ pub struct Point {
     pub data: Data,
 }
 
-#[allow(dead_code)]
 impl Point {
     /// Creates a new `Point` with default `Data`.
     ///
@@ -30,7 +29,10 @@ impl Point {
     ///
     /// ```
     /// use openmodel::geometry::Point;
-    /// let v = Point::new(1.0, 2.0, 3.0);
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// assert_eq!(p.x, 1.0);
+    /// assert_eq!(p.y, 2.0);
+    /// assert_eq!(p.z, 3.0);
     /// ```
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Point {
@@ -54,7 +56,10 @@ impl Point {
     ///
     /// ```
     /// use openmodel::geometry::Point;
-    /// let v = Point::with_name("MyPoint".to_string(), 1.0, 2.0, 3.0);
+    /// let p = Point::with_name("MyPoint".to_string(), 1.0, 2.0, 3.0);
+    /// assert_eq!(p.x, 1.0);
+    /// assert_eq!(p.y, 2.0);
+    /// assert_eq!(p.z, 3.0);
     /// ```
     pub fn with_name(name: String, x: f64, y: f64, z: f64) -> Self {
         Point {
@@ -77,61 +82,12 @@ impl Point {
     /// use openmodel::geometry::Point;
     /// let p1 = Point::new(1.0, 2.0, 2.0);
     /// let p2 = Point::new(4.0, 6.0, 6.0);
+    /// let distance = p1.distance(&p2);
+    /// assert_eq!(distance, 6.4031242374328485);
     /// ```
     pub fn distance(&self, other: &Point) -> f64 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2))
             .sqrt()
-    }
-
-    /// Translates the point by the given amounts.
-    ///
-    /// # Arguments
-    ///
-    /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction.
-    /// * `dz` - The offset in the z direction.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Point;
-    /// let mut p = Point::new(1.0, 2.0, 2.0);
-    /// p.translate(1.0, 2.0, 3.0);
-    /// assert_eq!(p.x, 2.0);
-    /// assert_eq!(p.y, 4.0);
-    /// assert_eq!(p.z, 5.0);
-    /// ```
-    pub fn translate(&mut self, dx: f64, dy: f64, dz: f64) {
-        self.x += dx;
-        self.y += dy;
-        self.z += dz;
-    }
-
-    /// Returns a new point translated by the given amounts.
-    ///
-    /// # Arguments
-    ///
-    /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction.
-    /// * `dz` - The offset in the z direction.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Point;
-    /// let p = Point::new(1.0, 2.0, 2.0);
-    /// let p2 = p.translated(1.0, 2.0, 3.0);
-    /// assert_eq!(p2.x, 2.0);
-    /// assert_eq!(p2.y, 4.0);
-    /// assert_eq!(p2.z, 5.0);
-    /// ```
-    pub fn translated(&self, dx: f64, dy: f64, dz: f64) -> Point {
-        Point {
-            x: self.x + dx,
-            y: self.y + dy,
-            z: self.z + dz,
-            data: Data::with_name("Point"),
-        }
     }
 }
 
@@ -157,35 +113,140 @@ impl Default for Point {
     }
 }
 
-impl Index<usize> for Point {
-    type Output = f64;
-
-    /// Provides read-only access to the coordinates of the point using the `[]` operator.
+impl From<Vector> for Point {
+    /// Converts a `Vector` into a `Point`.
+    ///
+    /// This implementation allows a `Vector` to be converted into a `Point`
+    /// by taking the `x`, `y`, and `z` components of the `Vector` and using
+    /// them to create a new `Point`.
     ///
     /// # Arguments
     ///
-    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    /// * `vector` - The `Vector` to be converted.
     ///
-    /// # Panics
+    /// # Example
     ///
-    /// Panics if the index is out of bounds.
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// let p: Point = v.into();
+    /// assert_eq!(p.x, 1.0);
+    /// assert_eq!(p.y, 2.0);
+    /// assert_eq!(p.z, 3.0);
+    /// ```
+    fn from(vector: Vector) -> Self {
+        Point {
+            x: vector.x,
+            y: vector.y,
+            z: vector.z,
+            data: Data::with_name("Point"),
+        }
+    }
+}
+
+impl AddAssign<&Vector> for Point {
+    /// Adds the coordinates of another point to this point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// use openmodel::geometry::Vector;
+    /// let mut p = Point::new(1.0, 2.0, 3.0);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// p += &v;
+    /// assert_eq!(p.x, 5.0);
+    /// assert_eq!(p.y, 7.0);
+    /// assert_eq!(p.z, 9.0);
+    /// ```
+    fn add_assign(&mut self, other: &Vector) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+
+impl Add<&Vector> for Point {
+    type Output = Point;
+
+    /// Adds the coordinates of a vector to this point and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// let p2 = p + &v;
+    /// assert_eq!(p2.x, 5.0);
+    /// assert_eq!(p2.y, 7.0);
+    /// assert_eq!(p2.z, 9.0);
+    /// ```
+    fn add(self, other: &Vector) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+            data: Data::with_name("Point"),
+        }
+    }
+}
+
+impl DivAssign<f64> for Point {
+    /// Divides the coordinates of the point by a scalar.
+    ///
+    /// # Arguments
+    ///
+    /// * `factor` - The scalar to divide by.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let mut p = Point::new(1.0, 2.0, 3.0);
+    /// p /= 2.0;
+    /// assert_eq!(p.x, 0.5);
+    /// assert_eq!(p.y, 1.0);
+    /// assert_eq!(p.z, 1.5);
+    /// ```
+    fn div_assign(&mut self, factor: f64) {
+        self.x /= factor;
+        self.y /= factor;
+        self.z /= factor;
+    }
+}
+
+impl Div<f64> for Point {
+    type Output = Point;
+
+    /// Divides the coordinates of the point by a scalar and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `factor` - The scalar to divide by.
     ///
     /// # Example
     ///
     /// ```
     /// use openmodel::geometry::Point;
     /// let p = Point::new(1.0, 2.0, 3.0);
-    /// assert_eq!(p[0], 1.0);
-    /// assert_eq!(p[1], 2.0);
-    /// assert_eq!(p[2], 3.0);
+    /// let p2 = p / 2.0;
+    /// assert_eq!(p2.x, 0.5);
+    /// assert_eq!(p2.y, 1.0);
+    /// assert_eq!(p2.z, 1.5);
     /// ```
-    fn index(&self, index: usize) -> &Self::Output {
-        match index {
-            0 => &self.x,
-            1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Index out of bounds"),
-        }
+    fn div(self, factor: f64) -> Point {
+        let mut result = self;
+        result /= factor;
+        result
     }
 }
 
@@ -222,33 +283,34 @@ impl IndexMut<usize> for Point {
     }
 }
 
-/// Converts a `Vector` into a `Point`.
-///
-/// This implementation allows a `Vector` to be converted into a `Point`
-/// by taking the `x`, `y`, and `z` components of the `Vector` and using
-/// them to create a new `Point`.
-///
-/// # Arguments
-///
-/// * `vector` - The `Vector` to be converted.
-///
-/// # Example
-///
-/// ```
-/// use openmodel::geometry::{Point, Vector};
-/// let v = Vector::new(1.0, 2.0, 3.0);
-/// let p: Point = v.into();
-/// assert_eq!(p.x, 1.0);
-/// assert_eq!(p.y, 2.0);
-/// assert_eq!(p.z, 3.0);
-/// ```
-impl From<Vector> for Point {
-    fn from(vector: Vector) -> Self {
-        Point {
-            x: vector.x,
-            y: vector.y,
-            z: vector.z,
-            data: Data::with_name("Point"),
+impl Index<usize> for Point {
+    type Output = f64;
+
+    /// Provides read-only access to the coordinates of the point using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// assert_eq!(p[0], 1.0);
+    /// assert_eq!(p[1], 2.0);
+    /// assert_eq!(p[2], 3.0);
+    /// ```
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds"),
         }
     }
 }
@@ -274,80 +336,6 @@ impl MulAssign<f64> for Point {
         self.x *= factor;
         self.y *= factor;
         self.z *= factor;
-    }
-}
-
-impl DivAssign<f64> for Point {
-    /// Divides the coordinates of the point by a scalar.
-    ///
-    /// # Arguments
-    ///
-    /// * `factor` - The scalar to divide by.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Point;
-    /// let mut p = Point::new(1.0, 2.0, 3.0);
-    /// p /= 2.0;
-    /// assert_eq!(p.x, 0.5);
-    /// assert_eq!(p.y, 1.0);
-    /// assert_eq!(p.z, 1.5);
-    /// ```
-    fn div_assign(&mut self, factor: f64) {
-        self.x /= factor;
-        self.y /= factor;
-        self.z /= factor;
-    }
-}
-
-impl AddAssign<&Point> for Point {
-    /// Adds the coordinates of another point to this point.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The other point.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Point;
-    /// let mut p1 = Point::new(1.0, 2.0, 3.0);
-    /// let p2 = Point::new(4.0, 5.0, 6.0);
-    /// p1 += &p2;
-    /// assert_eq!(p1.x, 5.0);
-    /// assert_eq!(p1.y, 7.0);
-    /// assert_eq!(p1.z, 9.0);
-    /// ```
-    fn add_assign(&mut self, other: &Point) {
-        self.x += other.x;
-        self.y += other.y;
-        self.z += other.z;
-    }
-}
-
-impl SubAssign<&Point> for Point {
-    /// Subtracts the coordinates of another point from this point.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The other point.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Point;
-    /// let mut p1 = Point::new(4.0, 5.0, 6.0);
-    /// let p2 = Point::new(1.0, 2.0, 3.0);
-    /// p1 -= &p2;
-    /// assert_eq!(p1.x, 3.0);
-    /// assert_eq!(p1.y, 3.0);
-    /// assert_eq!(p1.z, 3.0);
-    /// ```
-    fn sub_assign(&mut self, other: &Point) {
-        self.x -= other.x;
-        self.y -= other.y;
-        self.z -= other.z;
     }
 }
 
@@ -377,59 +365,28 @@ impl Mul<f64> for Point {
     }
 }
 
-impl Div<f64> for Point {
-    type Output = Point;
-
-    /// Divides the coordinates of the point by a scalar and returns a new point.
+impl SubAssign<&Point> for Point {
+    /// Subtracts the coordinates of another point from this point.
     ///
     /// # Arguments
     ///
-    /// * `factor` - The scalar to divide by.
+    /// * `other` - The other point.
     ///
     /// # Example
     ///
     /// ```
     /// use openmodel::geometry::Point;
-    /// let p = Point::new(1.0, 2.0, 3.0);
-    /// let p2 = p / 2.0;
-    /// assert_eq!(p2.x, 0.5);
-    /// assert_eq!(p2.y, 1.0);
-    /// assert_eq!(p2.z, 1.5);
+    /// let mut p1 = Point::new(4.0, 5.0, 6.0);
+    /// let p2 = Point::new(1.0, 2.0, 3.0);
+    /// p1 -= &p2;
+    /// assert_eq!(p1.x, 3.0);
+    /// assert_eq!(p1.y, 3.0);
+    /// assert_eq!(p1.z, 3.0);
     /// ```
-    fn div(self, factor: f64) -> Point {
-        let mut result = self;
-        result /= factor;
-        result
-    }
-}
-
-impl Add<&Vector> for Point {
-    type Output = Point;
-
-    /// Adds the coordinates of a vector to this point and returns a new point.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The vector.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::{Point, Vector};
-    /// let p = Point::new(1.0, 2.0, 3.0);
-    /// let v = Vector::new(4.0, 5.0, 6.0);
-    /// let p2 = p + &v;
-    /// assert_eq!(p2.x, 5.0);
-    /// assert_eq!(p2.y, 7.0);
-    /// assert_eq!(p2.z, 9.0);
-    /// ```
-    fn add(self, other: &Vector) -> Point {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-            data: Data::with_name("Point"),
-        }
+    fn sub_assign(&mut self, other: &Point) {
+        self.x -= other.x;
+        self.y -= other.y;
+        self.z -= other.z;
     }
 }
 
@@ -507,7 +464,16 @@ impl PartialOrd for Point {
 }
 
 impl fmt::Display for Point {
+    /// Log point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let p = Point::new(0.0, 0.0, 1.0);
+    /// println!("{}", p);
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Point {{ x: {}, y: {}, z: {}, data: {} }}", self.x, self.y, self.z, self.data)
+        write!(f, "Point {{ x: {}, y: {}, z: {}, Data: {} }}", self.x, self.y, self.z, self.data)
     }
 }

@@ -1,10 +1,14 @@
 use openmodel::geometry::Point;
+use openmodel::geometry::Vector;
+use openmodel::geometry::Line;
 
 fn main() {
     let mut p = Point::new(1.0, 2.0, 3.0);
-    p.translate(1.0, 2.0, 3.0);
-    println!("Translated Point: {}", p);
+    p += &Vector::new(1.0, 2.0, 3.0);
+    println!("{}", p);
 
-    let p2 = p.translated(1.0, 2.0, 3.0);
-    println!("New Translated Point: {}", p2);
+
+    let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    line*=10.0;
+    println!("{}", line);
 }

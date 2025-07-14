@@ -2,6 +2,7 @@ use crate::geometry::Point;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign}; // For operator overloading // For conversion to Vector
 use crate::common::Data; // For including Data
+use std::fmt; // For printing
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector {
@@ -15,7 +16,6 @@ pub struct Vector {
     pub data: Data,
 }
 
-#[allow(dead_code)]
 impl Vector {
     /// Creates a new `Vector` with default `Data`.
     ///
@@ -30,6 +30,9 @@ impl Vector {
     /// ```
     /// use openmodel::geometry::Vector;
     /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// assert_eq!(v.x, 1.0);
+    /// assert_eq!(v.y, 2.0);
+    /// assert_eq!(v.z, 3.0);
     /// ```
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Vector {
@@ -54,6 +57,9 @@ impl Vector {
     /// ```
     /// use openmodel::geometry::Vector;
     /// let v = Vector::with_name("MyVector".to_string(), 1.0, 2.0, 3.0);
+    /// assert_eq!(v.x, 1.0);
+    /// assert_eq!(v.y, 2.0);
+    /// assert_eq!(v.z, 3.0);
     /// ```
     pub fn with_name(name: String, x: f64, y: f64, z: f64) -> Self {
         Vector {
@@ -80,7 +86,17 @@ impl Vector {
 }
 
 impl Default for Vector {
-    /// Creates a default `Vector` with all components set to 0.0.
+    /// Creates a zero length `Vector`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::default();
+    /// assert_eq!(v.x, 0.0);
+    /// assert_eq!(v.y, 0.0);
+    /// assert_eq!(v.z, 0.0);
+    /// ```
     fn default() -> Self {
         Vector {
             x: 0.0,
@@ -91,35 +107,139 @@ impl Default for Vector {
     }
 }
 
-impl Index<usize> for Vector {
-    type Output = f64;
-
-    /// Provides read-only access to the coordinates of the Vector using the `[]` operator.
+impl From<Point> for Vector {
+    /// Converts a `Point` into a `Vector`.
+    ///
+    /// This implementation allows a `Point` to be converted into a `Vector`
+    /// by taking the `x`, `y`, and `z` components of the `Point` and using
+    /// them to create a new `Vector`.
     ///
     /// # Arguments
     ///
-    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    /// * `point` - The `Point` to be converted.
     ///
-    /// # Panics
+    /// # Example
     ///
-    /// Panics if the index is out of bounds.
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// let v: Vector = p.into();
+    /// assert_eq!(v.x, 1.0);
+    /// assert_eq!(v.y, 2.0);
+    /// assert_eq!(v.z, 3.0);
+    /// ```
+    fn from(point: Point) -> Self {
+        Vector {
+            x: point.x,
+            y: point.y,
+            z: point.z,
+            data: Data::with_name("Vector"),
+        }
+    }
+}
+
+impl AddAssign<&Vector> for Vector {
+    /// Adds the components of another vector to this vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other vector.
     ///
     /// # Example
     ///
     /// ```
     /// use openmodel::geometry::Vector;
-    /// let p = Vector::new(1.0, 2.0, 3.0);
-    /// assert_eq!(p[0], 1.0);
-    /// assert_eq!(p[1], 2.0);
-    /// assert_eq!(p[2], 3.0);
+    /// let mut v1 = Vector::new(1.0, 2.0, 3.0);
+    /// let v2 = Vector::new(4.0, 5.0, 6.0);
+    /// v1 += &v2;
+    /// assert_eq!(v1.x, 5.0);
+    /// assert_eq!(v1.y, 7.0);
+    /// assert_eq!(v1.z, 9.0);
     /// ```
-    fn index(&self, index: usize) -> &Self::Output {
-        match index {
-            0 => &self.x,
-            1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Index out of bounds"),
+    fn add_assign(&mut self, other: &Vector) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+
+impl Add<&Point> for Vector {
+    type Output = Point;
+
+    /// Adds the components of a point to this vector and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// let p = Point::new(4.0, 5.0, 6.0);
+    /// let p2 = v + &p;
+    /// assert_eq!(p2.x, 5.0);
+    /// assert_eq!(p2.y, 7.0);
+    /// assert_eq!(p2.z, 9.0);
+    /// ```
+    fn add(self, other: &Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+            data: Data::with_name("Point"),
         }
+    }
+}
+
+impl DivAssign<f64> for Vector {
+    /// Divides the components of the vector by a scalar.
+    ///
+    /// # Arguments
+    ///
+    /// * `factor` - The scalar to divide by.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let mut v = Vector::new(1.0, 2.0, 3.0);
+    /// v /= 2.0;
+    /// assert_eq!(v.x, 0.5);
+    /// assert_eq!(v.y, 1.0);
+    /// assert_eq!(v.z, 1.5);
+    /// ```
+    fn div_assign(&mut self, factor: f64) {
+        self.x /= factor;
+        self.y /= factor;
+        self.z /= factor;
+    }
+}
+
+impl Div<f64> for Vector {
+    type Output = Vector;
+
+    /// Divides the components of the vector by a scalar and returns a new vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `factor` - The scalar to divide by.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// let v2 = v / 2.0;
+    /// assert_eq!(v2.x, 0.5);
+    /// assert_eq!(v2.y, 1.0);
+    /// assert_eq!(v2.z, 1.5);
+    /// ```
+    fn div(self, factor: f64) -> Vector {
+        let mut result = self;
+        result /= factor;
+        result
     }
 }
 
@@ -156,33 +276,34 @@ impl IndexMut<usize> for Vector {
     }
 }
 
-/// Converts a `Point` into a `Vector`.
-///
-/// This implementation allows a `Point` to be converted into a `Vector`
-/// by taking the `x`, `y`, and `z` components of the `Point` and using
-/// them to create a new `Vector`.
-///
-/// # Arguments
-///
-/// * `point` - The `Point` to be converted.
-///
-/// # Example
-///
-/// ```
-/// use openmodel::geometry::{Point, Vector};
-/// let p = Point::new(1.0, 2.0, 3.0);
-/// let v: Vector = p.into();
-/// assert_eq!(v.x, 1.0);
-/// assert_eq!(v.y, 2.0);
-/// assert_eq!(v.z, 3.0);
-/// ```
-impl From<Point> for Vector {
-    fn from(point: Point) -> Self {
-        Vector {
-            x: point.x,
-            y: point.y,
-            z: point.z,
-            data: Data::with_name("Vector"),
+impl Index<usize> for Vector {
+    type Output = f64;
+
+    /// Provides read-only access to the coordinates of the Vector using the `[]` operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let p = Vector::new(1.0, 2.0, 3.0);
+    /// assert_eq!(p[0], 1.0);
+    /// assert_eq!(p[1], 2.0);
+    /// assert_eq!(p[2], 3.0);
+    /// ```
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds"),
         }
     }
 }
@@ -208,80 +329,6 @@ impl MulAssign<f64> for Vector {
         self.x *= factor;
         self.y *= factor;
         self.z *= factor;
-    }
-}
-
-impl DivAssign<f64> for Vector {
-    /// Divides the components of the vector by a scalar.
-    ///
-    /// # Arguments
-    ///
-    /// * `factor` - The scalar to divide by.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Vector;
-    /// let mut v = Vector::new(1.0, 2.0, 3.0);
-    /// v /= 2.0;
-    /// assert_eq!(v.x, 0.5);
-    /// assert_eq!(v.y, 1.0);
-    /// assert_eq!(v.z, 1.5);
-    /// ```
-    fn div_assign(&mut self, factor: f64) {
-        self.x /= factor;
-        self.y /= factor;
-        self.z /= factor;
-    }
-}
-
-impl AddAssign<&Vector> for Vector {
-    /// Adds the components of another vector to this vector.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The other vector.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Vector;
-    /// let mut v1 = Vector::new(1.0, 2.0, 3.0);
-    /// let v2 = Vector::new(4.0, 5.0, 6.0);
-    /// v1 += &v2;
-    /// assert_eq!(v1.x, 5.0);
-    /// assert_eq!(v1.y, 7.0);
-    /// assert_eq!(v1.z, 9.0);
-    /// ```
-    fn add_assign(&mut self, other: &Vector) {
-        self.x += other.x;
-        self.y += other.y;
-        self.z += other.z;
-    }
-}
-
-impl SubAssign<&Vector> for Vector {
-    /// Subtracts the components of another vector from this vector.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The other vector.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Vector;
-    /// let mut v1 = Vector::new(4.0, 5.0, 6.0);
-    /// let v2 = Vector::new(1.0, 2.0, 3.0);
-    /// v1 -= &v2;
-    /// assert_eq!(v1.x, 3.0);
-    /// assert_eq!(v1.y, 3.0);
-    /// assert_eq!(v1.z, 3.0);
-    /// ```
-    fn sub_assign(&mut self, other: &Vector) {
-        self.x -= other.x;
-        self.y -= other.y;
-        self.z -= other.z;
     }
 }
 
@@ -311,59 +358,28 @@ impl Mul<f64> for Vector {
     }
 }
 
-impl Div<f64> for Vector {
-    type Output = Vector;
-
-    /// Divides the components of the vector by a scalar and returns a new vector.
+impl SubAssign<&Vector> for Vector {
+    /// Subtracts the components of another vector from this vector.
     ///
     /// # Arguments
     ///
-    /// * `factor` - The scalar to divide by.
+    /// * `other` - The other vector.
     ///
     /// # Example
     ///
     /// ```
     /// use openmodel::geometry::Vector;
-    /// let v = Vector::new(1.0, 2.0, 3.0);
-    /// let v2 = v / 2.0;
-    /// assert_eq!(v2.x, 0.5);
-    /// assert_eq!(v2.y, 1.0);
-    /// assert_eq!(v2.z, 1.5);
+    /// let mut v1 = Vector::new(4.0, 5.0, 6.0);
+    /// let v2 = Vector::new(1.0, 2.0, 3.0);
+    /// v1 -= &v2;
+    /// assert_eq!(v1.x, 3.0);
+    /// assert_eq!(v1.y, 3.0);
+    /// assert_eq!(v1.z, 3.0);
     /// ```
-    fn div(self, factor: f64) -> Vector {
-        let mut result = self;
-        result /= factor;
-        result
-    }
-}
-
-impl Add<&Point> for Vector {
-    type Output = Point;
-
-    /// Adds the components of a point to this vector and returns a new point.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The point.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::{Point, Vector};
-    /// let v = Vector::new(1.0, 2.0, 3.0);
-    /// let p = Point::new(4.0, 5.0, 6.0);
-    /// let p2 = v + &p;
-    /// assert_eq!(p2.x, 5.0);
-    /// assert_eq!(p2.y, 7.0);
-    /// assert_eq!(p2.z, 9.0);
-    /// ```
-    fn add(self, other: &Point) -> Point {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-            data: Data::with_name("Point"),
-        }
+    fn sub_assign(&mut self, other: &Vector) {
+        self.x -= other.x;
+        self.y -= other.y;
+        self.z -= other.z;
     }
 }
 
@@ -434,5 +450,20 @@ impl PartialOrd for Vector {
     /// ```
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.length().partial_cmp(&other.length())?)
+    }
+}
+
+impl fmt::Display for Vector {
+    /// Log vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::new(0.0, 0.0, 1.0);
+    /// println!("{}", v);
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Vector {{ x: {}, y: {}, z: {}, Data: {} }}", self.x, self.y, self.z, self.data)
     }
 }
