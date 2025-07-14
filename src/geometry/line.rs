@@ -68,7 +68,7 @@ impl Line{
     ///
     /// ```
     /// use openmodel::geometry::Line;
-    /// let line = Line::with_name("MyLine".to_string(), .0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let line = Line::with_name("MyLine".to_string(), 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// ```
     pub fn with_name(name: String, x0: f64, y0: f64, z0: f64, x1: f64, y1: f64, z1: f64) -> Self {
         Line {
@@ -95,7 +95,7 @@ impl Line{
     /// use openmodel::geometry::Line;
     /// let p0 = Point::new(0.0, 0.0, 0.0);
     /// let p1 = Point::new(0.0, 0.0, 1.0);
-    /// let line = Line::from_points(p0, p1);
+    /// let line = Line::from_points(&p0, &p1);
     /// ```
     pub fn from_points(p0: &Point, p1: &Point) -> Self{
         Line {
@@ -136,7 +136,7 @@ impl Line{
     ///
     /// ```
     /// use openmodel::geometry::Line;
-    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// line.translate(1.0, 2.0, 3.0);
     /// ```
     pub fn translate(&mut self, dx: f64, dy: f64, dz: f64) {
@@ -212,12 +212,15 @@ impl Add<&Vector> for Line {
     ///
     /// ```
     /// use openmodel::geometry::{Line, Vector};
-    /// let line0 = line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// let line0 = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
     /// let v = Vector::new(0.0, 0.0, 1.0);
     /// let line1 = line0 + &v;
-    /// assert_eq!(p2.x, 5.0);
-    /// assert_eq!(p2.y, 7.0);
-    /// assert_eq!(p2.z, 9.0);
+    /// assert_eq!(line1.x0, 0.0);
+    /// assert_eq!(line1.y0, 1.0);
+    /// assert_eq!(line1.z0, 3.0);
+    /// assert_eq!(line1.x1, 3.0);
+    /// assert_eq!(line1.y1, 4.0);
+    /// assert_eq!(line1.z1, 6.0);
     /// ```
     fn add(self, other: &Vector) -> Line {
         Line {
@@ -281,12 +284,12 @@ impl Div<f64> for Line {
     /// use openmodel::geometry::Line;
     /// let line0 = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// let line1 = line0 / 2.0;
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 0.0);
-    /// assert_eq!(line.z0, 0.0);
-    /// assert_eq!(line.x1, 0.0);
-    /// assert_eq!(line.y1, 0.0);
-    /// assert_eq!(line.z1, 0.5);
+    /// assert_eq!(line1.x0, 0.0);
+    /// assert_eq!(line1.y0, 0.0);
+    /// assert_eq!(line1.z0, 0.0);
+    /// assert_eq!(line1.x1, 0.0);
+    /// assert_eq!(line1.y1, 0.0);
+    /// assert_eq!(line1.z1, 0.5);
     /// ```
     fn div(self, factor: f64) -> Line {
         let mut result = self;
@@ -309,12 +312,12 @@ impl DivAssign<f64> for Line {
     /// use openmodel::geometry::Line;
     /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// line /= 2.0;
-    /// assert_eq!(p.x0, 0.0);
-    /// assert_eq!(p.y0, 0.0);
-    /// assert_eq!(p.z0, 0.0);
-    /// assert_eq!(p.x1, 0.0);
-    /// assert_eq!(p.y1, 0.0);
-    /// assert_eq!(p.z1, 0.5);
+    /// assert_eq!(line.x0, 0.0);
+    /// assert_eq!(line.y0, 0.0);
+    /// assert_eq!(line.z0, 0.0);
+    /// assert_eq!(line.x1, 0.0);
+    /// assert_eq!(line.y1, 0.0);
+    /// assert_eq!(line.z1, 0.5);
     /// ```
     fn div_assign(&mut self, factor: f64) {
         self.x0 /= factor;
@@ -325,10 +328,6 @@ impl DivAssign<f64> for Line {
         self.z1 /= factor;
     }
 }
-
-
-
-
 
 
 impl Index<usize> for Line {
@@ -354,7 +353,7 @@ impl Index<usize> for Line {
     /// assert_eq!(line[2], 2.0);
     /// assert_eq!(line[3], 3.0);
     /// assert_eq!(line[4], 4.0);
-    /// assert_eq!(line[5], 4.0);
+    /// assert_eq!(line[5], 5.0);
     /// ```
     fn index(&self, index: usize) -> &Self::Output {
         match index {
@@ -368,7 +367,6 @@ impl Index<usize> for Line {
         }
     }
 }
-
 
 
 impl IndexMut<usize> for Line {
@@ -426,14 +424,14 @@ impl MulAssign<f64> for Line {
     ///
     /// ```
     /// use openmodel::geometry::Line;
-    /// let mut line = Point::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-    /// p *= 2.0;
-    /// assert_eq!(p.x0, 0.0);
-    /// assert_eq!(p.y0, 2.0);
-    /// assert_eq!(p.z0, 4.0);
-    /// assert_eq!(p.x1, 6.0);
-    /// assert_eq!(p.y1, 8.0);
-    /// assert_eq!(p.z1, 10.0);
+    /// let mut line = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// line *= 2.0;
+    /// assert_eq!(line.x0, 0.0);
+    /// assert_eq!(line.y0, 2.0);
+    /// assert_eq!(line.z0, 4.0);
+    /// assert_eq!(line.x1, 6.0);
+    /// assert_eq!(line.y1, 8.0);
+    /// assert_eq!(line.z1, 10.0);
     /// ```
     fn mul_assign(&mut self, factor: f64) {
         self.x0 *= factor;
