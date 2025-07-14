@@ -88,8 +88,8 @@ impl Point {
     /// # Arguments
     ///
     /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction (default is 0.0).
-    /// * `dz` - The offset in the z direction (default is 0.0).
+    /// * `dy` - The offset in the y direction.
+    /// * `dz` - The offset in the z direction.
     ///
     /// # Example
     ///
@@ -112,8 +112,8 @@ impl Point {
     /// # Arguments
     ///
     /// * `dx` - The offset in the x direction.
-    /// * `dy` - The offset in the y direction (default is 0.0).
-    /// * `dz` - The offset in the z direction (default is 0.0).
+    /// * `dy` - The offset in the y direction.
+    /// * `dz` - The offset in the z direction.
     ///
     /// # Example
     ///
