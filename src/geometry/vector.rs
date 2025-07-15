@@ -83,6 +83,129 @@ impl Vector {
     pub fn length(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
+
+    /// Computes the cross product of two vectors.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v1 = Vector::new(1.0, 2.0, 3.0);
+    /// let v2 = Vector::new(4.0, 5.0, 6.0);
+    /// let v3 = v1.cross(&v2);
+    /// assert_eq!(v3.x, -3.0);
+    /// assert_eq!(v3.y, 6.0);
+    /// assert_eq!(v3.z, -3.0);
+    /// ```
+    pub fn cross(&self, other: &Vector) -> Vector {
+        Vector {
+            x: self.y * other.z - self.z * other.y,
+            y: self.z * other.x - self.x * other.z,
+            z: self.x * other.y - self.y * other.x,
+            data: Data::with_name("Vector"),
+        }
+    }
+
+    /// Computes the dot product of two vectors.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v1 = Vector::new(1.0, 2.0, 3.0);
+    /// let v2 = Vector::new(4.0, 5.0, 6.0);
+    /// let v3 = v1.dot(&v2);
+    /// assert_eq!(v3, 32.0);
+    /// ```
+    pub fn dot(&self, other: &Vector) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    /// Unitizes the vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let mut v = Vector::new(1.0, 2.0, 3.0);
+    /// v.unitize();
+    /// assert_eq!(v.x, 0.2672612419124244);
+    /// assert_eq!(v.y, 0.5345224838248488);
+    /// assert_eq!(v.z, 0.8017837257372732);
+    /// ```
+    pub fn unitize(&mut self) -> bool {
+        let mut rc = false;
+        let d = self.length();
+        if d > 0.0 {
+            self.x /= d;
+            self.y /= d;
+            self.z /= d;
+            rc = true;
+        }
+        return rc;
+    }
+    
+    /// Returns a unit vector along the positive X axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::x_axis();
+    /// assert_eq!(v.x, 1.0);
+    /// assert_eq!(v.y, 0.0);
+    /// assert_eq!(v.z, 0.0);
+    /// ```
+    pub fn x_axis() -> Self {
+        Vector {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+            data: Data::with_name("Vector"),
+        }
+    }
+    
+    /// Returns a unit vector along the positive Y axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::y_axis();
+    /// assert_eq!(v.x, 0.0);
+    /// assert_eq!(v.y, 1.0);
+    /// assert_eq!(v.z, 0.0);
+    /// ```
+    pub fn y_axis() -> Self {
+        Vector {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+            data: Data::with_name("Vector"),
+        }
+    }
+    
+    /// Returns a unit vector along the positive Z axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let v = Vector::z_axis();
+    /// assert_eq!(v.x, 0.0);
+    /// assert_eq!(v.y, 0.0);
+    /// assert_eq!(v.z, 1.0);
+    /// ```
+    pub fn z_axis() -> Self {
+        Vector {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+            data: Data::with_name("Vector"),
+        }
+    }
+    
+
 }
 
 impl Default for Vector {

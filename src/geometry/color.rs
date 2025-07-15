@@ -30,10 +30,11 @@ impl Color {
     ///
     /// ```
     /// use openmodel::geometry::Color;
-    /// let c = Color::new(0, 100, 200);
+    /// let c = Color::new(0, 100, 200, 0);
     /// assert_eq!(c.r, 0);
     /// assert_eq!(c.g, 100);
     /// assert_eq!(c.b, 200);
+    /// assert_eq!(c.a, 0);
     /// ```
     pub fn new(r: usize, g: usize, b: usize, a: usize) -> Self {
         Color {
@@ -88,10 +89,10 @@ impl Index<usize> for Color {
     /// ```
     /// use openmodel::geometry::Color;
     /// let c = Color::new(100, 200, 255, 0);
-    /// assert_eq!(line[0], 100);
-    /// assert_eq!(line[1], 200);
-    /// assert_eq!(line[2], 255);
-    /// assert_eq!(line[3], 0);
+    /// assert_eq!(c[0], 100);
+    /// assert_eq!(c[1], 200);
+    /// assert_eq!(c[2], 255);
+    /// assert_eq!(c[3], 0);
     /// ```
     fn index(&self, index: usize) -> &Self::Output {
         match index {
@@ -120,14 +121,14 @@ impl IndexMut<usize> for Color {
     /// ```
     /// use openmodel::geometry::Color;
     /// let mut c = Color::new(100, 200, 255, 0);
-    /// line[0] = 50;
-    /// line[1] = 100;
-    /// line[2] = 150;
-    /// line[3] = 100;
-    /// assert_eq!(line[0], 50);
-    /// assert_eq!(line[1], 100);
-    /// assert_eq!(line[2], 150);
-    /// assert_eq!(line[3], 100);
+    /// c[0] = 50;
+    /// c[1] = 100;
+    /// c[2] = 150;
+    /// c[3] = 100;
+    /// assert_eq!(c[0], 50);
+    /// assert_eq!(c[1], 100);
+    /// assert_eq!(c[2], 150);
+    /// assert_eq!(c[3], 100);
     /// ```
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         match index {
@@ -149,10 +150,10 @@ impl fmt::Display for Color{
     ///
     /// ```
     /// use openmodel::geometry::Color;
-    /// let color = Cloud::default();
+    /// let color = Color::default();
     /// println!("{}", color);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Cloud {{ r: {}, g {}, b: {}, a: {}, Data: {} }}", self.r, self.g, self.b, self.a, self.data)
+        write!(f, "Color {{ r: {}, g {}, b: {}, a: {}, Data: {} }}", self.r, self.g, self.b, self.a, self.data)
     }
 }

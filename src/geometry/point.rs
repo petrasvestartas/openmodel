@@ -1,6 +1,7 @@
 use crate::geometry::Vector;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use crate::common::Data;
 use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -199,6 +200,61 @@ impl Add<&Vector> for Point {
     }
 }
 
+impl AddAssign<&Point> for Point {
+    /// Adds the coordinates of another point to this point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let mut p = Point::new(1.0, 2.0, 3.0);
+    /// let p2 = Point::new(4.0, 5.0, 6.0);
+    /// p += &p2;
+    /// assert_eq!(p.x, 5.0);
+    /// assert_eq!(p.y, 7.0);
+    /// assert_eq!(p.z, 9.0);
+    /// ```
+    fn add_assign(&mut self, other: &Point) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+
+impl Add<&Point> for Point {
+    type Output = Point;
+
+    /// Adds the coordinates of a point to this point and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let p = Point::new(1.0, 2.0, 3.0);
+    /// let p2 = Point::new(4.0, 5.0, 6.0);
+    /// let p3 = p + &p2;
+    /// assert_eq!(p3.x, 5.0);
+    /// assert_eq!(p3.y, 7.0);
+    /// assert_eq!(p3.z, 9.0);
+    /// ```
+    fn add(self, other: &Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+            data: Data::with_name("Point"),
+        }
+    }
+}
+
 impl DivAssign<f64> for Point {
     /// Divides the coordinates of the point by a scalar.
     ///
@@ -364,35 +420,35 @@ impl Mul<f64> for Point {
     }
 }
 
-impl SubAssign<&Point> for Point {
-    /// Subtracts the coordinates of another point from this point.
+impl SubAssign<&Vector> for Point {
+    /// Subtracts the coordinates of vector from this point.
     ///
     /// # Arguments
     ///
-    /// * `other` - The other point.
+    /// * `vector` - The vector.
     ///
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Point;
+    /// use openmodel::geometry::{Point, Vector};
     /// let mut p1 = Point::new(4.0, 5.0, 6.0);
-    /// let p2 = Point::new(1.0, 2.0, 3.0);
-    /// p1 -= &p2;
+    /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// p1 -= &v;
     /// assert_eq!(p1.x, 3.0);
     /// assert_eq!(p1.y, 3.0);
     /// assert_eq!(p1.z, 3.0);
     /// ```
-    fn sub_assign(&mut self, other: &Point) {
-        self.x -= other.x;
-        self.y -= other.y;
-        self.z -= other.z;
+    fn sub_assign(&mut self, vector: &Vector) {
+        self.x -= vector.x;
+        self.y -= vector.y;
+        self.z -= vector.z;
     }
 }
 
 impl Sub<&Vector> for Point {
-    type Output = Vector;
+    type Output = Point;
 
-    /// Subtracts the coordinates of a vector from this point and returns a new vector.
+    /// Subtracts the coordinates of a vector from this point and returns a new point.
     ///
     /// # Arguments
     ///
@@ -409,11 +465,67 @@ impl Sub<&Vector> for Point {
     /// assert_eq!(v2.y, 3.0);
     /// assert_eq!(v2.z, 3.0);
     /// ```
-    fn sub(self, other: &Vector) -> Vector {
-        Vector {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
+    fn sub(self, vector: &Vector) -> Point {
+        Point {
+            x: self.x - vector.x,
+            y: self.y - vector.y,
+            z: self.z - vector.z,
+            data: Data::with_name("Point"),
+        }
+    }
+}
+
+
+impl SubAssign<&Point> for Point {
+    /// Subtracts the coordinates of point from this point.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - The point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let mut p1 = Point::new(4.0, 5.0, 6.0);
+    /// let p2 = Point::new(1.0, 2.0, 3.0);
+    /// p1 -= &p2;
+    /// assert_eq!(p1.x, 3.0);
+    /// assert_eq!(p1.y, 3.0);
+    /// assert_eq!(p1.z, 3.0);
+    /// ```
+    fn sub_assign(&mut self, point: &Point) {
+        self.x -= point.x;
+        self.y -= point.y;
+        self.z -= point.z;
+    }
+}
+
+impl Sub<&Point> for Point {
+    type Output = Point;
+
+    /// Subtracts the coordinates of a point from this point and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Point, Vector};
+    /// let p = Point::new(4.0, 5.0, 6.0);
+    /// let p2 = Point::new(1.0, 2.0, 3.0);
+    /// let p3 = p - &p2;
+    /// assert_eq!(p3.x, 3.0);
+    /// assert_eq!(p3.y, 3.0);
+    /// assert_eq!(p3.z, 3.0);
+    /// ```
+    fn sub(self, point: &Point) -> Point {
+        Point {
+            x: self.x - point.x,
+            y: self.y - point.y,
+            z: self.z - point.z,
             data: Data::with_name("Point"),
         }
     }
