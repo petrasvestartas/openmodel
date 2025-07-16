@@ -6,7 +6,7 @@ pub mod plane;
 pub mod xform;
 pub mod cloud;
 pub mod pline;
-// pub mod mesh;
+pub mod mesh;
 
 pub use point::Point;
 pub use vector::Vector;
@@ -16,4 +16,4 @@ pub use plane::Plane;
 pub use xform::Xform;
 pub use cloud::Cloud;
 pub use pline::Pline;
-// pub use mesh::Mesh;
+pub use mesh::Mesh;
