@@ -10,28 +10,34 @@ use std::fmt;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cloud {
     /// The collection of points.
-    pub points : Point,
-    /// The collection of vectors.
-    pub normals: Vector,
+    pub points: Vec<Point>,
+
+    /// The collection of normals.
+    pub normals: Vec<Vector>,
+
     /// The collection of colors.
-    pub colors: Vector,
+    pub colors: Vec<Color>,
+
     /// The transformation matrix.
-    pub matrix: Matrix,
+    pub xform: XForm,
+
     /// Associated data - guid and name.
     pub data: Data,
 }
 
 
-impl fmt::Display for Cloud{
-    /// Log cloud.
-    /// # Example
-    ///
-    /// ```
-    /// use openmodel::geometry::Cloud;
-    /// let cloud = Cloud::default();
-    /// println!("{}", cloud);
-    /// ```
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Cloud {{ points: {}, normals {}, colors: {}, Data: {} }}", 0, 0, 0, self.data)
+
+use std::fmt;
+
+impl fmt::Display for Cloud {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Cloud {{ points: {}, normals: {}, colors: {}, data: {} }}",
+            self.points.len(),
+            self.normals.len(),
+            self.colors.len(),
+            self.data
+        )
     }
 }

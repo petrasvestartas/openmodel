@@ -38,6 +38,19 @@ cargo run --bin openmodel_bin
 cargo run -q
 ```
 
+### Generate Documentation
+```bash
+# Generate documentation
+cargo doc
+
+# Generate documentation and open it in your browser
+cargo doc --open
+
+# Include private items in the documentation
+cargo doc --document-private-items --open
+```
+
+This will create HTML documentation in the `target/doc` directory based on the doc comments in your code. The documentation includes all of your public items (functions, structs, etc.) along with their doc comments.
 
 ### Step 3 - VSCode
 

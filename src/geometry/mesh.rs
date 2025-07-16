@@ -3,7 +3,7 @@ use crate::geometry::Vector;
 use crate::geometry::Frame;
 use crate::geometry::Matrix;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 use crate::common::Data;
 use std::fmt;
 
