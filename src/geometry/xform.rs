@@ -509,6 +509,92 @@ impl Xform {
             data: Data::with_name("Point")
         }
     }
+
+    /// Applies a transformation to a slice of points, returning a new vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - The slice of points to transform.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Xform, Point};
+    /// let xform = Xform::translation(1.0, 2.0, 3.0);
+    /// let points = vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 1.0, 1.0)];
+    /// let transformed = xform.apply_to_vec(&points);
+    /// assert_eq!(transformed[0].x, 1.0);
+    /// assert_eq!(transformed[0].y, 2.0);
+    /// assert_eq!(transformed[0].z, 3.0);
+    /// assert_eq!(transformed[1].x, 2.0);
+    /// assert_eq!(transformed[1].y, 3.0);
+    /// assert_eq!(transformed[1].z, 4.0);
+    /// ```
+    pub fn apply_to_vec(&self, points: &[Point]) -> Vec<Point> {
+        points.iter().map(|p| self.apply(p)).collect()
+    }
+
+    /// Applies a transformation to a mutable slice of points in place.
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - The mutable slice of points to transform in place.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Xform, Point};
+    /// let xform = Xform::translation(1.0, 2.0, 3.0);
+    /// let mut points = vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 1.0, 1.0)];
+    /// xform.apply_in_place(&mut points);
+    /// assert_eq!(points[0].x, 1.0);
+    /// assert_eq!(points[0].y, 2.0);
+    /// assert_eq!(points[0].z, 3.0);
+    /// assert_eq!(points[1].x, 2.0);
+    /// assert_eq!(points[1].y, 3.0);
+    /// assert_eq!(points[1].z, 4.0);
+    /// ```
+    pub fn apply_in_place(&self, points: &mut [Point]) {
+        for point in points {
+            *point = self.apply(&*point);
+        }
+    }
+}
+
+impl Default for Xform {
+    /// Creates a default `Xform` with all coordinates set to 0.0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Xform;
+    /// let xform = Xform::default();
+    /// assert_eq!(xform.m00, 1.0);
+    /// assert_eq!(xform.m01, 0.0);
+    /// assert_eq!(xform.m02, 0.0);
+    /// assert_eq!(xform.m03, 0.0);
+    /// assert_eq!(xform.m10, 0.0);
+    /// assert_eq!(xform.m11, 1.0);
+    /// assert_eq!(xform.m12, 0.0);
+    /// assert_eq!(xform.m13, 0.0);
+    /// assert_eq!(xform.m20, 0.0);
+    /// assert_eq!(xform.m21, 0.0);
+    /// assert_eq!(xform.m22, 1.0);
+    /// assert_eq!(xform.m23, 0.0);
+    /// assert_eq!(xform.m30, 0.0);
+    /// assert_eq!(xform.m31, 0.0);
+    /// assert_eq!(xform.m32, 0.0);
+    /// assert_eq!(xform.m33, 1.0);
+    /// ```
+    fn default() -> Self {
+        Xform {
+            m00: 1.0, m01: 0.0, m02: 0.0, m03: 0.0,
+            m10: 0.0, m11: 1.0, m12: 0.0, m13: 0.0,
+            m20: 0.0, m21: 0.0, m22: 1.0, m23: 0.0,
+            m30: 0.0, m31: 0.0, m32: 0.0, m33: 1.0,
+            data: Data::with_name("Xform"),
+        }
+    }
 }
 
 /// Implementation of the Index trait to allow accessing matrix elements with [row, col] syntax

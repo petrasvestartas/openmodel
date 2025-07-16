@@ -122,6 +122,182 @@ impl Plane{
         }
     }
 
+    /// Creates a new `Plane` from a point and a normal vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - A point on the plane.
+    /// * `normal` - The normal vector of the plane.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Plane, Point, Vector};
+    /// let point = Point::new(1.0, 2.0, 3.0);
+    /// let normal = Vector::new(0.0, 0.0, 1.0);
+    /// let plane = Plane::from_point_normal(&point, &normal);
+    /// assert_eq!(plane.origin.x, 1.0);
+    /// assert_eq!(plane.origin.y, 2.0);
+    /// assert_eq!(plane.origin.z, 3.0);
+    /// assert_eq!(plane.zaxis.x, 0.0);
+    /// assert_eq!(plane.zaxis.y, 0.0);
+    /// assert_eq!(plane.zaxis.z, 1.0);
+    /// assert_eq!(plane.d, -3.0); // -(0*1 + 0*2 + 1*3)
+    /// ```
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the normal vector has zero length.
+    pub fn from_point_normal(point: &Point, normal: &Vector) -> Self {
+        // Clone and unitize the normal vector
+        let mut zaxis = normal.clone();
+        if !zaxis.unitize() {
+            panic!("Normal vector cannot be zero length");
+        }
+
+        // Create two perpendicular vectors to form a coordinate system
+        // Choose an initial vector that's not parallel to the normal
+        let initial = if zaxis.x.abs() < 0.9 {
+            Vector::new(1.0, 0.0, 0.0)  // Use x-axis if normal is not too close to x-axis
+        } else {
+            Vector::new(0.0, 1.0, 0.0)  // Use y-axis if normal is close to x-axis
+        };
+
+        // Get first perpendicular vector (x-axis of the plane)
+        let mut xaxis = initial.cross(&zaxis);
+        xaxis.unitize();
+
+        // Get second perpendicular vector (y-axis of the plane)
+        let mut yaxis = zaxis.cross(&xaxis);
+        yaxis.unitize();
+
+        // Calculate plane equation coefficients (Ax + By + Cz + D = 0)
+        let a = zaxis.x;
+        let b = zaxis.y;
+        let c = zaxis.z;
+        let d = -(a * point.x + b * point.y + c * point.z);
+
+        Plane {
+            origin: point.clone(),
+            xaxis,
+            yaxis,
+            zaxis,
+            a,
+            b,
+            c,
+            d,
+            data: Data::with_name("Plane")
+        }
+    }
+
+    /// Creates a new `Plane` from a collection of points.
+    ///
+    /// For 2 points: Creates a plane where the line between points is the x-axis.
+    /// For 3+ points: Computes an average cross product from consecutive point triplets.
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - A slice of points (minimum 2 points required).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Plane, Point};
+    /// let points = vec![
+    ///     Point::new(0.0, 0.0, 0.0),
+    ///     Point::new(1.0, 0.0, 0.0),
+    ///     Point::new(0.0, 1.0, 0.0)
+    /// ];
+    /// let plane = Plane::plane_from_points(&points);
+    /// assert_eq!(plane.origin.x, 0.0);
+    /// assert_eq!(plane.origin.y, 0.0);
+    /// assert_eq!(plane.origin.z, 0.0);
+    /// ```
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if fewer than 2 points are provided.
+    pub fn plane_from_points(points: &[Point]) -> Self {
+        
+        if points.len() == 0{
+            return Plane::default();
+        }else if points.len() == 1 {
+            return Plane::new(points[0].clone(), Vector::new(1.0, 0.0, 0.0), Vector::new(0.0, 1.0, 0.0));
+        }else if points.len() >= 3 {
+            
+            // For three or more points, compute an average cross product for the plane normal
+            let mut normal_sum = Vector::new(0.0, 0.0, 0.0);
+            let mut normal_count = 0;
+            
+            // Calculate cross products from consecutive point triplets
+            for i in 0..(points.len() - 2) {
+                let v1 = Vector::new(
+                    points[i + 1].x - points[i].x,
+                    points[i + 1].y - points[i].y,
+                    points[i + 1].z - points[i].z,
+                );
+                let v2 = Vector::new(
+                    points[i + 2].x - points[i + 1].x,
+                    points[i + 2].y - points[i + 1].y,
+                    points[i + 2].z - points[i + 1].z,
+                );
+                
+                let cross = v1.cross(&v2);
+                // Only add non-zero cross products (skip colinear segments)
+                if cross.length() > 1e-10 {
+                    normal_sum.x += cross.x;
+                    normal_sum.y += cross.y;
+                    normal_sum.z += cross.z;
+                    normal_count += 1;
+                }
+            }
+            
+            if normal_count > 0 {
+                // Average the normals
+                normal_sum.x /= normal_count as f64;
+                normal_sum.y /= normal_count as f64;
+                normal_sum.z /= normal_count as f64;
+                
+                // Create plane from first point and averaged normal
+                Self::from_point_normal(&points[0], &normal_sum)
+            } else {
+                // All segments are colinear, fall back to 2-point logic
+                Self::plane_from_two_points(&points[0], &points[1])
+            }
+        } else {
+            // For two points, guess the y-axis since the first line is x-axis
+            Self::plane_from_two_points(&points[0], &points[1])
+        }
+    }
+    
+    /// Helper function to create a plane from two points
+    fn plane_from_two_points(p1: &Point, p2: &Point) -> Self {
+        // The line from p1 to p2 becomes the x-axis
+        let x_axis = Vector::new(
+            p2.x - p1.x,
+            p2.y - p1.y,
+            p2.z - p1.z,
+        );
+        
+        // Guess a reasonable y-axis by choosing a vector not parallel to x-axis
+        let y_guess = if x_axis.z.abs() < 0.9 {
+            Vector::new(0.0, 0.0, 1.0)  // Use world Z if x-axis is not too close to Z
+        } else {
+            Vector::new(0.0, 1.0, 0.0)  // Use world Y if x-axis is close to Z
+        };
+        
+        // Get perpendicular y-axis via cross product
+        let z_axis = x_axis.cross(&y_guess);
+        let y_axis = z_axis.cross(&x_axis);
+        
+        // Compute plane normal (z-axis)
+        let normal = x_axis.cross(&y_axis);
+        
+        // Create plane from first point and computed normal
+        Self::from_point_normal(p1, &normal)
+
+    }
+
     
 
 

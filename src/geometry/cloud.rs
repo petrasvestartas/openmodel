@@ -1,9 +1,9 @@
 use crate::geometry::Point;
 use crate::geometry::Vector;
-use crate::geometry::Frame;
-use crate::geometry::Matrix;
+use crate::geometry::Color;
+use crate::geometry::Xform;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;
 use std::fmt;
 
@@ -19,15 +19,168 @@ pub struct Cloud {
     pub colors: Vec<Color>,
 
     /// The transformation matrix.
-    pub xform: XForm,
+    pub xform: Xform,
 
     /// Associated data - guid and name.
     pub data: Data,
 }
 
+impl Cloud {
+    /// Creates a new `Cloud` with default `Data`.
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - The collection of points.
+    /// * `normals` - The collection of normals.
+    /// * `colors` - The collection of colors.
+    /// * `xform` - The transformation matrix.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// use openmodel::geometry::Vector;
+    /// use openmodel::geometry::Color;
+    /// use openmodel::geometry::Cloud;
+    /// let points = vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0)];
+    /// let normals = vec![Vector::new(0.0, 0.0, 1.0), Vector::new(0.0, 1.0, 0.0), Vector::new(1.0, 0.0, 0.0)];
+    /// let colors = vec![Color::new(255, 0, 0, 0), Color::new(0, 255, 0, 0), Color::new(0, 0, 255, 0)];
+    /// let cloud = Cloud::new(points, normals, colors);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of points, normals, and colors are not equal.
+    pub fn new(points: Vec<Point>, normals: Vec<Vector>, colors: Vec<Color>) -> Self {
+        Self {
+            points,
+            normals,
+            colors,
+            xform: Xform::default(),
+            data: Data::default(),
+        }
+    }
+
+}
 
 
-use std::fmt;
+impl AddAssign<&Vector> for Cloud {
+    /// Adds the coordinates of another point to this point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
+    /// let mut c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// c += &v;
+    /// assert_eq!(c.points[0].x, 5.0);
+    /// assert_eq!(c.points[0].y, 7.0);
+    /// assert_eq!(c.points[0].z, 9.0);
+    /// ```
+    fn add_assign(&mut self, other: &Vector) {
+        for p in &mut self.points {
+            p.x += other.x;
+            p.y += other.y;
+            p.z += other.z;
+        }
+    }
+}
+
+impl Add<&Vector> for Cloud {
+    type Output = Cloud;
+
+    /// Adds the coordinates of a vector to this point and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
+    /// let c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// let c2 = c + &v;
+    /// assert_eq!(c2.points[0].x, 5.0);
+    /// assert_eq!(c2.points[0].y, 7.0);
+    /// assert_eq!(c2.points[0].z, 9.0);
+    /// ```
+    fn add(self, other: &Vector) -> Cloud {
+        let mut c = self.clone();
+        for p in &mut c.points {
+            p.x += other.x;
+            p.y += other.y;
+            p.z += other.z;
+        }
+        return c;
+    }
+}
+
+
+
+impl SubAssign <&Vector> for Cloud {
+    /// Adds the coordinates of another point to this point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other point.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
+    /// let mut c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// c -= &v;
+    /// assert_eq!(c.points[0].x, -3.0);
+    /// assert_eq!(c.points[0].y, -3.0);
+    /// assert_eq!(c.points[0].z, -3.0);
+    /// ```
+    fn sub_assign(&mut self, other: &Vector) {
+        for p in &mut self.points {
+            p.x -= other.x;
+            p.y -= other.y;
+            p.z -= other.z;
+        }
+    }
+}
+
+impl Sub<&Vector> for Cloud {
+    type Output = Cloud;
+
+    /// Adds the coordinates of a vector to this point and returns a new point.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
+    /// let c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// let v = Vector::new(4.0, 5.0, 6.0);
+    /// let c2 = c - &v;
+    /// assert_eq!(c2.points[0].x, -3.0);
+    /// assert_eq!(c2.points[0].y, -3.0);
+    /// assert_eq!(c2.points[0].z, -3.0);
+    /// ```
+    fn sub(self, other: &Vector) -> Cloud {
+        let mut c = self.clone();
+        for p in &mut c.points {
+            p.x -= other.x;
+            p.y -= other.y;
+            p.z -= other.z;
+        }
+        return c;
+    }
+}
 
 impl fmt::Display for Cloud {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
