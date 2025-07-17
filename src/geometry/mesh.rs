@@ -2,6 +2,17 @@ use crate::geometry::{Point, Vector};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
+/// Weighting scheme for vertex normal computation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NormalWeighting {
+    /// Weight face normals by face area (default)
+    Area,
+    /// Weight face normals by interior angle at the vertex
+    Angle,
+    /// Uniform weighting (all faces contribute equally)
+    Uniform,
+}
+
 /// A halfedge mesh data structure for representing polygonal surfaces.
 /// 
 /// This implementation follows the COMPAS halfedge mesh design, where mesh
@@ -533,10 +544,119 @@ impl Mesh {
         Some(normal)
     }
 
-    /// Compute the normal vector of a vertex.
+    /// Compute the angle subtended by a vertex in a face.
     /// 
-    /// The vertex normal is computed as the average of the normals of all faces
-    /// incident to the vertex, weighted by face area.
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// * `face_key` - The key of the face
+    /// 
+    /// # Returns
+    /// The angle in radians, or None if the vertex is not part of the face
+    fn vertex_angle_in_face(&self, vertex_key: usize, face_key: usize) -> Option<f64> {
+        let face_vertices = self.face_vertices(face_key)?;
+        let vertex_pos = self.vertex_position(vertex_key)?;
+        
+        // Find the vertex in the face
+        let vertex_index = face_vertices.iter().position(|&v| v == vertex_key)?;
+        let n = face_vertices.len();
+        
+        // Get the two adjacent vertices
+        let prev_vertex = face_vertices[(vertex_index + n - 1) % n];
+        let next_vertex = face_vertices[(vertex_index + 1) % n];
+        
+        let prev_pos = self.vertex_position(prev_vertex)?;
+        let next_pos = self.vertex_position(next_vertex)?;
+        
+        // Compute vectors from vertex to its neighbors
+        let v1 = Vector::new(
+            prev_pos.x - vertex_pos.x,
+            prev_pos.y - vertex_pos.y,
+            prev_pos.z - vertex_pos.z,
+        );
+        let v2 = Vector::new(
+            next_pos.x - vertex_pos.x,
+            next_pos.y - vertex_pos.y,
+            next_pos.z - vertex_pos.z,
+        );
+        
+        // Compute angle using dot product
+        let dot = v1.dot(&v2);
+        let len1 = v1.length();
+        let len2 = v2.length();
+        
+        if len1 > 0.0 && len2 > 0.0 {
+            let cos_angle = dot / (len1 * len2);
+            // Clamp to avoid numerical issues
+            let cos_angle = cos_angle.max(-1.0).min(1.0);
+            Some(cos_angle.acos())
+        } else {
+            None
+        }
+    }
+    
+    /// Compute the normal vector of a vertex with configurable weighting.
+    /// 
+    /// The vertex normal is computed as the weighted average of the normals of all faces
+    /// incident to the vertex, using the specified weighting scheme.
+    /// 
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// * `weighting` - The weighting scheme to use
+    /// 
+    /// # Returns
+    /// The unit normal vector of the vertex, or None if the vertex is invalid
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// use openmodel::geometry::mesh::NormalWeighting;
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let normal = mesh.vertex_normal_weighted(v0, NormalWeighting::Area).unwrap();
+    /// assert!((normal.z - 1.0).abs() < 1e-10); // Normal should point in +Z direction
+    /// ```
+    pub fn vertex_normal_weighted(&self, vertex_key: usize, weighting: NormalWeighting) -> Option<Vector> {
+        let faces = self.vertex_faces(vertex_key);
+        if faces.is_empty() {
+            return None;
+        }
+        
+        let mut normal_sum = Vector::new(0.0, 0.0, 0.0);
+        let mut total_weight = 0.0;
+        
+        for face_key in faces {
+            if let Some(face_normal) = self.face_normal(face_key) {
+                let weight = match weighting {
+                    NormalWeighting::Area => self.face_area(face_key).unwrap_or(0.0),
+                    NormalWeighting::Angle => self.vertex_angle_in_face(vertex_key, face_key).unwrap_or(0.0),
+                    NormalWeighting::Uniform => 1.0,
+                };
+                
+                normal_sum.x += face_normal.x * weight;
+                normal_sum.y += face_normal.y * weight;
+                normal_sum.z += face_normal.z * weight;
+                total_weight += weight;
+            }
+        }
+        
+        if total_weight > 0.0 {
+            normal_sum.x /= total_weight;
+            normal_sum.y /= total_weight;
+            normal_sum.z /= total_weight;
+            normal_sum.unitize();
+            Some(normal_sum)
+        } else {
+            None
+        }
+    }
+    
+    /// Compute the normal vector of a vertex using area weighting (default).
+    /// 
+    /// This is a convenience method that uses area weighting for backward compatibility.
     /// 
     /// # Arguments
     /// * `vertex_key` - The key of the vertex
@@ -557,33 +677,7 @@ impl Mesh {
     /// assert!((normal.z - 1.0).abs() < 1e-10); // Normal should point in +Z direction
     /// ```
     pub fn vertex_normal(&self, vertex_key: usize) -> Option<Vector> {
-        let faces = self.vertex_faces(vertex_key);
-        if faces.is_empty() {
-            return None;
-        }
-        
-        let mut normal_sum = Vector::new(0.0, 0.0, 0.0);
-        let mut total_area = 0.0;
-        
-        for face_key in faces {
-            if let Some(face_normal) = self.face_normal(face_key) {
-                let area = self.face_area(face_key).unwrap_or(0.0);
-                normal_sum.x += face_normal.x * area;
-                normal_sum.y += face_normal.y * area;
-                normal_sum.z += face_normal.z * area;
-                total_area += area;
-            }
-        }
-        
-        if total_area > 0.0 {
-            normal_sum.x /= total_area;
-            normal_sum.y /= total_area;
-            normal_sum.z /= total_area;
-            normal_sum.unitize();
-            Some(normal_sum)
-        } else {
-            None
-        }
+        self.vertex_normal_weighted(vertex_key, NormalWeighting::Area)
     }
 
     /// Compute the area of a face.
@@ -663,7 +757,43 @@ impl Mesh {
         normals
     }
 
-    /// Compute normals for all vertices in the mesh.
+    /// Compute normals for all vertices in the mesh with configurable weighting.
+    /// 
+    /// # Arguments
+    /// * `weighting` - The weighting scheme to use
+    /// 
+    /// # Returns
+    /// A HashMap mapping vertex keys to their normal vectors
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// use openmodel::geometry::mesh::NormalWeighting;
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let normals = mesh.vertex_normals_weighted(NormalWeighting::Angle);
+    /// assert_eq!(normals.len(), 3);
+    /// assert!(normals.contains_key(&v0));
+    /// ```
+    pub fn vertex_normals_weighted(&self, weighting: NormalWeighting) -> HashMap<usize, Vector> {
+        let mut normals = HashMap::new();
+        
+        for vertex_key in self.vertex.keys() {
+            if let Some(normal) = self.vertex_normal_weighted(*vertex_key, weighting) {
+                normals.insert(*vertex_key, normal);
+            }
+        }
+        
+        normals
+    }
+    
+    /// Compute normals for all vertices in the mesh using area weighting (default).
+    /// 
+    /// This is a convenience method that uses area weighting for backward compatibility.
     /// 
     /// # Returns
     /// A HashMap mapping vertex keys to their normal vectors
@@ -682,15 +812,7 @@ impl Mesh {
     /// assert!(normals.contains_key(&v0));
     /// ```
     pub fn vertex_normals(&self) -> HashMap<usize, Vector> {
-        let mut normals = HashMap::new();
-        
-        for vertex_key in self.vertex.keys() {
-            if let Some(normal) = self.vertex_normal(*vertex_key) {
-                normals.insert(*vertex_key, normal);
-            }
-        }
-        
-        normals
+        self.vertex_normals_weighted(NormalWeighting::Area)
     }
 
     /// Create a halfedge mesh from a list of polygons.
@@ -959,6 +1081,102 @@ mod tests {
         assert!(normals.contains_key(&v0));
         assert!(normals.contains_key(&v1));
         assert!(normals.contains_key(&v2));
+    }
+    
+    #[test]
+    fn test_vertex_normal_weighted_area() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normal = mesh.vertex_normal_weighted(v0, NormalWeighting::Area).unwrap();
+        
+        // Should be the same as the default vertex_normal method
+        let normal_default = mesh.vertex_normal(v0).unwrap();
+        assert!((normal.x - normal_default.x).abs() < 1e-10);
+        assert!((normal.y - normal_default.y).abs() < 1e-10);
+        assert!((normal.z - normal_default.z).abs() < 1e-10);
+    }
+    
+    #[test]
+    fn test_vertex_normal_weighted_angle() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normal = mesh.vertex_normal_weighted(v0, NormalWeighting::Angle).unwrap();
+        
+        // For a single triangle, angle weighting should give same direction as area
+        // Normal should point in +Z direction
+        assert!((normal.z - 1.0).abs() < 1e-10);
+        assert!(normal.x.abs() < 1e-10);
+        assert!(normal.y.abs() < 1e-10);
+    }
+    
+    #[test]
+    fn test_vertex_normal_weighted_uniform() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normal = mesh.vertex_normal_weighted(v0, NormalWeighting::Uniform).unwrap();
+        
+        // For a single triangle, uniform weighting should give same direction
+        // Normal should point in +Z direction
+        assert!((normal.z - 1.0).abs() < 1e-10);
+        assert!(normal.x.abs() < 1e-10);
+        assert!(normal.y.abs() < 1e-10);
+    }
+    
+    #[test]
+    fn test_vertex_normals_weighted() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normals = mesh.vertex_normals_weighted(NormalWeighting::Angle);
+        
+        assert_eq!(normals.len(), 3);
+        assert!(normals.contains_key(&v0));
+        assert!(normals.contains_key(&v1));
+        assert!(normals.contains_key(&v2));
+        
+        // All vertex normals should point in +Z direction
+        let normal_v0 = normals.get(&v0).unwrap();
+        assert!((normal_v0.z - 1.0).abs() < 1e-10);
+    }
+    
+    #[test]
+    fn test_vertex_angle_in_face() {
+        let mut mesh = Mesh::new();
+        // Create a right triangle
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        
+        // Angle at v0 should be 90 degrees (π/2 radians)
+        let angle = mesh.vertex_angle_in_face(v0, f).unwrap();
+        assert!((angle - std::f64::consts::PI / 2.0).abs() < 1e-10);
+        
+        // Angles at v1 and v2 should be 45 degrees (π/4 radians) each
+        let angle1 = mesh.vertex_angle_in_face(v1, f).unwrap();
+        let angle2 = mesh.vertex_angle_in_face(v2, f).unwrap();
+        assert!((angle1 - std::f64::consts::PI / 4.0).abs() < 1e-10);
+        assert!((angle2 - std::f64::consts::PI / 4.0).abs() < 1e-10);
+        
+        // Sum of angles should be π
+        let total_angle = angle + angle1 + angle2;
+        assert!((total_angle - std::f64::consts::PI).abs() < 1e-10);
     }
 
     #[test]
