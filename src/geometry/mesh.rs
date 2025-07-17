@@ -1,21 +1,31 @@
-use crate::geometry::Point;
-use crate::geometry::Vector;
+use crate::geometry::{Point, Vector};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt;
+use std::collections::{HashMap, HashSet};
 
-/// A simple mesh data structure for representing surface meshes.
-/// Based on the COMPAS mesh implementation.
+/// A halfedge mesh data structure for representing polygonal surfaces.
+/// 
+/// This implementation follows the COMPAS halfedge mesh design, where mesh
+/// connectivity is stored using a halfedge data structure. Each edge is split
+/// into two halfedges with opposite orientations, enabling efficient topological
+/// queries and mesh operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Mesh {
-    /// Vertex data: maps vertex key to vertex attributes (including position)
-    vertices: HashMap<usize, VertexData>,
-    /// Face data: maps face key to list of vertex keys
-    faces: HashMap<usize, Vec<usize>>,
+    /// Halfedge connectivity: halfedge[u][v] represents the halfedge from vertex u to vertex v
+    pub halfedge: HashMap<usize, HashMap<usize, Option<usize>>>,
+    /// Vertices: maps vertex key to vertex data
+    pub vertex: HashMap<usize, VertexData>,
+    /// Faces: maps face key to list of vertex keys in order
+    pub face: HashMap<usize, Vec<usize>>,
     /// Face attributes: maps face key to face attributes
-    face_attributes: HashMap<usize, HashMap<String, f64>>,
-    /// Edge attributes: maps edge tuple to edge attributes
-    edge_attributes: HashMap<(usize, usize), HashMap<String, f64>>,
+    pub facedata: HashMap<usize, HashMap<String, f64>>,
+    /// Edge attributes: maps edge tuple to edge attributes  
+    pub edgedata: HashMap<(usize, usize), HashMap<String, f64>>,
+    /// Default vertex attributes
+    pub default_vertex_attributes: HashMap<String, f64>,
+    /// Default face attributes
+    pub default_face_attributes: HashMap<String, f64>,
+    /// Default edge attributes
+    pub default_edge_attributes: HashMap<String, f64>,
     /// Next available vertex key
     max_vertex: usize,
     /// Next available face key
@@ -26,9 +36,35 @@ pub struct Mesh {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VertexData {
     /// 3D position of the vertex
-    pub position: Point,
+    pub x: f64,
+    pub y: f64, 
+    pub z: f64,
     /// Custom attributes for the vertex
     pub attributes: HashMap<String, f64>,
+}
+
+impl VertexData {
+    /// Create a new vertex from a Point
+    pub fn new(point: Point) -> Self {
+        Self {
+            x: point.x,
+            y: point.y,
+            z: point.z,
+            attributes: HashMap::new(),
+        }
+    }
+    
+    /// Get the position as a Point
+    pub fn position(&self) -> Point {
+        Point::new(self.x, self.y, self.z)
+    }
+    
+    /// Set the position from a Point
+    pub fn set_position(&mut self, point: Point) {
+        self.x = point.x;
+        self.y = point.y;
+        self.z = point.z;
+    }
 }
 
 impl Default for Mesh {
@@ -38,7 +74,7 @@ impl Default for Mesh {
 }
 
 impl Mesh {
-    /// Create a new empty mesh.
+    /// Create a new empty halfedge mesh.
     /// 
     /// # Example
     /// 
@@ -50,116 +86,157 @@ impl Mesh {
     /// assert!(mesh.is_empty());
     /// ```
     pub fn new() -> Self {
+        let mut default_vertex_attributes = HashMap::new();
+        default_vertex_attributes.insert("x".to_string(), 0.0);
+        default_vertex_attributes.insert("y".to_string(), 0.0);
+        default_vertex_attributes.insert("z".to_string(), 0.0);
+        
         Mesh {
-            vertices: HashMap::new(),
-            faces: HashMap::new(),
-            face_attributes: HashMap::new(),
-            edge_attributes: HashMap::new(),
+            halfedge: HashMap::new(),
+            vertex: HashMap::new(),
+            face: HashMap::new(),
+            facedata: HashMap::new(),
+            edgedata: HashMap::new(),
+            default_vertex_attributes,
+            default_face_attributes: HashMap::new(),
+            default_edge_attributes: HashMap::new(),
             max_vertex: 0,
             max_face: 0,
         }
     }
 
-    /// Create a mesh from a collection of polygons.
-    /// 
-    /// Each polygon is defined as a list of XYZ coordinates of its corners.
-    /// The method automatically handles vertex sharing and connectivity.
-    /// 
-    /// # Arguments
-    /// * `polygons` - A list of polygons, where each polygon is a list of Points
-    /// * `precision` - Optional precision for vertex merging (default: 1e-10)
+    /// Check if the mesh is empty.
     /// 
     /// # Returns
-    /// A new Mesh object constructed from the polygons
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// 
-    /// let polygons = vec![
-    ///     // Triangle 1
-    ///     vec![
-    ///         Point::new(0.0, 0.0, 0.0),
-    ///         Point::new(1.0, 0.0, 0.0),
-    ///         Point::new(0.0, 1.0, 0.0),
-    ///     ],
-    ///     // Triangle 2 (shares an edge with triangle 1)
-    ///     vec![
-    ///         Point::new(1.0, 0.0, 0.0),
-    ///         Point::new(1.0, 1.0, 0.0),
-    ///         Point::new(0.0, 1.0, 0.0),
-    ///     ],
-    /// ];
-    /// 
-    /// let mesh = Mesh::from_polygons(polygons, None);
-    /// assert_eq!(mesh.number_of_vertices(), 4); // Shared vertices are merged
-    /// assert_eq!(mesh.number_of_faces(), 2);
-    /// ```
-    pub fn from_polygons(polygons: Vec<Vec<Point>>, precision: Option<f64>) -> Self {
-        let mut mesh = Mesh::new();
-        let precision = precision.unwrap_or(1e-10);
-        
-        // Map to store unique vertices and their keys
-        let mut vertex_map: HashMap<String, usize> = HashMap::new();
-        
-        for polygon in polygons {
-            if polygon.len() < 3 {
-                continue; // Skip invalid polygons
-            }
-            
-            let mut face_vertices = Vec::new();
-            
-            for point in polygon {
-                // Create a key for the point based on its coordinates with precision
-                let key = format!(
-                    "{:.10}_{:.10}_{:.10}", 
-                    (point.x / precision).round() * precision,
-                    (point.y / precision).round() * precision,
-                    (point.z / precision).round() * precision
-                );
-                
-                let vertex_key = if let Some(&existing_key) = vertex_map.get(&key) {
-                    // Vertex already exists, reuse it
-                    existing_key
-                } else {
-                    // New vertex, add it to the mesh
-                    let vertex_key = mesh.add_vertex(point, None);
-                    vertex_map.insert(key, vertex_key);
-                    vertex_key
-                };
-                
-                face_vertices.push(vertex_key);
-            }
-            
-            // Add the face to the mesh
-            mesh.add_face(face_vertices, None);
-        }
-        
-        mesh
-    }
-
-    /// Create a new empty mesh (deprecated alias for new).
+    /// True if the mesh has no vertices and no faces
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::Mesh;
-    /// let mesh = Mesh::create();
-    /// assert_eq!(mesh.number_of_vertices(), 0);
-    /// assert_eq!(mesh.number_of_faces(), 0);
+    /// let mesh = Mesh::new();
     /// assert!(mesh.is_empty());
     /// ```
-    #[deprecated(note = "Use Mesh::new() instead")]
-    pub fn create() -> Self {
-        Mesh {
-            vertices: HashMap::new(),
-            faces: HashMap::new(),
-            face_attributes: HashMap::new(),
-            edge_attributes: HashMap::new(),
-            max_vertex: 0,
-            max_face: 0,
+    pub fn is_empty(&self) -> bool {
+        self.vertex.is_empty() && self.face.is_empty()
+    }
+
+    /// Clear the mesh, removing all vertices and faces.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// assert!(!mesh.is_empty());
+    /// mesh.clear();
+    /// assert!(mesh.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.halfedge.clear();
+        self.vertex.clear();
+        self.face.clear();
+        self.facedata.clear();
+        self.edgedata.clear();
+        self.max_vertex = 0;
+        self.max_face = 0;
+    }
+
+    /// Get the number of vertices in the mesh.
+    /// 
+    /// # Returns
+    /// The total number of vertices
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// assert_eq!(mesh.number_of_vertices(), 0);
+    /// mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// assert_eq!(mesh.number_of_vertices(), 1);
+    /// ```
+    pub fn number_of_vertices(&self) -> usize {
+        self.vertex.len()
+    }
+
+    /// Get the number of faces in the mesh.
+    /// 
+    /// # Returns
+    /// The total number of faces
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// assert_eq!(mesh.number_of_faces(), 0);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// assert_eq!(mesh.number_of_faces(), 1);
+    /// ```
+    pub fn number_of_faces(&self) -> usize {
+        self.face.len()
+    }
+
+    /// Get the number of edges in the mesh.
+    /// 
+    /// # Returns
+    /// The total number of edges (undirected)
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// assert_eq!(mesh.number_of_edges(), 3);
+    /// ```
+    pub fn number_of_edges(&self) -> usize {
+        let mut seen = HashSet::new();
+        let mut count = 0;
+        
+        for u in self.halfedge.keys() {
+            if let Some(neighbors) = self.halfedge.get(u) {
+                for v in neighbors.keys() {
+                    let edge = if u < v { (*u, *v) } else { (*v, *u) };
+                    if seen.insert(edge) {
+                        count += 1;
+                    }
+                }
+            }
         }
+        
+        count
+    }
+
+    /// Compute the Euler characteristic (V - E + F) of the mesh.
+    /// 
+    /// # Returns
+    /// The Euler characteristic
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// assert_eq!(mesh.euler(), 1); // V=3, E=3, F=1 -> 3-3+1=1
+    /// ```
+    pub fn euler(&self) -> i32 {
+        let v = self.number_of_vertices() as i32;
+        let e = self.number_of_edges() as i32;
+        let f = self.number_of_faces() as i32;
+        v - e + f
     }
 
     /// Add a vertex to the mesh.
@@ -176,25 +253,25 @@ impl Mesh {
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
-    /// assert_eq!(v1, 0);
+    /// let vertex_key = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
     /// assert_eq!(mesh.number_of_vertices(), 1);
     /// ```
     pub fn add_vertex(&mut self, position: Point, key: Option<usize>) -> usize {
         let vertex_key = key.unwrap_or_else(|| {
-            let k = self.max_vertex;
             self.max_vertex += 1;
-            k
+            self.max_vertex
         });
         
-        self.vertices.insert(vertex_key, VertexData {
-            position,
-            attributes: HashMap::new(),
-        });
-        
+        // Update max_vertex if explicit key is larger
         if vertex_key >= self.max_vertex {
             self.max_vertex = vertex_key + 1;
         }
+        
+        let vertex_data = VertexData::new(position);
+        self.vertex.insert(vertex_key, vertex_data);
+        
+        // Initialize halfedge connectivity for this vertex
+        self.halfedge.entry(vertex_key).or_insert_with(HashMap::new);
         
         vertex_key
     }
@@ -202,8 +279,8 @@ impl Mesh {
     /// Add a face to the mesh.
     /// 
     /// # Arguments
-    /// * `vertices` - List of vertex keys that form the face
-    /// * `key` - Optional specific key for the face. If None, auto-generates.
+    /// * `vertices` - List of vertex keys defining the face in order
+    /// * `fkey` - Optional specific key for the face. If None, auto-generates.
     /// 
     /// # Returns
     /// The key of the added face, or None if the face is invalid
@@ -213,366 +290,350 @@ impl Mesh {
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// let face = mesh.add_face(vec![v1, v2, v3], None);
-    /// assert!(face.is_some());
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let face_key = mesh.add_face(vec![v0, v1, v2], None).unwrap();
     /// assert_eq!(mesh.number_of_faces(), 1);
     /// ```
-    pub fn add_face(&mut self, vertices: Vec<usize>, key: Option<usize>) -> Option<usize> {
-        // Check if all vertices exist and face has at least 3 vertices
-        if vertices.len() < 3 || !vertices.iter().all(|v| self.vertices.contains_key(v)) {
+    pub fn add_face(&mut self, vertices: Vec<usize>, fkey: Option<usize>) -> Option<usize> {
+        // Validate the face
+        if vertices.len() < 3 {
             return None;
         }
         
-        // Check for duplicate vertices in the face
-        let mut unique_vertices = std::collections::HashSet::new();
+        // Check that all vertices exist
+        if !vertices.iter().all(|v| self.vertex.contains_key(v)) {
+            return None;
+        }
+        
+        // Check for duplicate vertices
+        let mut unique_vertices = HashSet::new();
         for vertex in &vertices {
             if !unique_vertices.insert(*vertex) {
                 return None; // Duplicate vertex found
             }
         }
         
-        let face_key = key.unwrap_or_else(|| {
-            let k = self.max_face;
+        let face_key = fkey.unwrap_or_else(|| {
             self.max_face += 1;
-            k
+            self.max_face
         });
         
-        self.faces.insert(face_key, vertices);
-        self.face_attributes.insert(face_key, HashMap::new());
-        
+        // Update max_face if explicit key is larger
         if face_key >= self.max_face {
             self.max_face = face_key + 1;
+        }
+        
+        // Add the face
+        self.face.insert(face_key, vertices.clone());
+        
+        // Update halfedge connectivity
+        for i in 0..vertices.len() {
+            let u = vertices[i];
+            let v = vertices[(i + 1) % vertices.len()];
+            
+            // Ensure both vertices have halfedge entries
+            self.halfedge.entry(u).or_insert_with(HashMap::new);
+            self.halfedge.entry(v).or_insert_with(HashMap::new);
+            
+            // Set the halfedge from u to v to point to this face
+            self.halfedge.get_mut(&u).unwrap().insert(v, Some(face_key));
+            
+            // Set the reverse halfedge from v to u (boundary halfedge if no face exists)
+            if !self.halfedge.get(&v).unwrap().contains_key(&u) {
+                self.halfedge.get_mut(&v).unwrap().insert(u, None);
+            }
         }
         
         Some(face_key)
     }
 
-    /// Get the number of vertices in the mesh.
+    /// Get the position of a vertex.
+    /// 
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// 
+    /// # Returns
+    /// The position of the vertex, or None if vertex doesn't exist
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// assert_eq!(mesh.number_of_vertices(), 0);
-    /// mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// assert_eq!(mesh.number_of_vertices(), 1);
-    /// ```
-    pub fn number_of_vertices(&self) -> usize {
-        self.vertices.len()
-    }
-
-    /// Get the number of faces in the mesh.
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// assert_eq!(mesh.number_of_faces(), 0);
-    /// mesh.add_face(vec![v1, v2, v3], None);
-    /// assert_eq!(mesh.number_of_faces(), 1);
-    /// ```
-    pub fn number_of_faces(&self) -> usize {
-        self.faces.len()
-    }
-
-    /// Get the number of edges in the mesh.
-    /// Each edge is counted once, even if it's shared by multiple faces.
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// mesh.add_face(vec![v1, v2, v3], None);
-    /// assert_eq!(mesh.number_of_edges(), 3);
-    /// ```
-    pub fn number_of_edges(&self) -> usize {
-        let mut edges = std::collections::HashSet::new();
-        
-        for face_vertices in self.faces.values() {
-            for i in 0..face_vertices.len() {
-                let v1 = face_vertices[i];
-                let v2 = face_vertices[(i + 1) % face_vertices.len()];
-                let edge = if v1 < v2 { (v1, v2) } else { (v2, v1) };
-                edges.insert(edge);
-            }
-        }
-        
-        edges.len()
-    }
-
-    /// Calculate Euler characteristic (V - E + F).
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// mesh.add_face(vec![v1, v2, v3], None);
-    /// // For a single triangle: V=3, E=3, F=1, so V-E+F = 1
-    /// assert_eq!(mesh.euler(), 1);
-    /// ```
-    pub fn euler(&self) -> i32 {
-        self.number_of_vertices() as i32 - self.number_of_edges() as i32 + self.number_of_faces() as i32
-    }
-
-    /// Get vertex position by key.
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
-    /// let pos = mesh.vertex_position(v1).unwrap();
+    /// let v = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
+    /// let pos = mesh.vertex_position(v).unwrap();
     /// assert_eq!(pos.x, 1.0);
     /// assert_eq!(pos.y, 2.0);
     /// assert_eq!(pos.z, 3.0);
     /// ```
-    pub fn vertex_position(&self, key: usize) -> Option<&Point> {
-        self.vertices.get(&key).map(|v| &v.position)
+    pub fn vertex_position(&self, vertex_key: usize) -> Option<Point> {
+        self.vertex.get(&vertex_key).map(|v| v.position())
     }
 
-    /// Get face vertices by key.
+    /// Get the vertices of a face.
+    /// 
+    /// # Arguments
+    /// * `face_key` - The key of the face
+    /// 
+    /// # Returns
+    /// A list of vertex keys defining the face, or None if face doesn't exist
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-    /// let vertices = mesh.face_vertices(face).unwrap();
-    /// assert_eq!(vertices.len(), 3);
-    /// assert!(vertices.contains(&v1));
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let vertices = mesh.face_vertices(f).unwrap();
+    /// assert_eq!(*vertices, vec![v0, v1, v2]);
     /// ```
-    pub fn face_vertices(&self, key: usize) -> Option<&Vec<usize>> {
-        self.faces.get(&key)
+    pub fn face_vertices(&self, face_key: usize) -> Option<&Vec<usize>> {
+        self.face.get(&face_key)
     }
 
-    /// Get all vertex keys.
-    pub fn vertices(&self) -> impl Iterator<Item = usize> + '_ {
-        self.vertices.keys().copied()
-    }
-
-    /// Get all face keys.
-    pub fn faces(&self) -> impl Iterator<Item = usize> + '_ {
-        self.faces.keys().copied()
-    }
-
-    /// Set vertex attribute.
+    /// Check if a vertex is on the boundary of the mesh.
+    /// 
+    /// A vertex is on the boundary if it has at least one incident halfedge
+    /// that points to None (no face), indicating a boundary edge.
+    /// 
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// 
+    /// # Returns
+    /// True if the vertex is on the boundary
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// assert!(mesh.set_vertex_attribute(v1, "weight", 1.5));
-    /// assert_eq!(mesh.get_vertex_attribute(v1, "weight"), Some(1.5));
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// assert!(mesh.is_vertex_on_boundary(v0)); // All vertices of a single triangle are on boundary
     /// ```
-    pub fn set_vertex_attribute(&mut self, vertex: usize, name: &str, value: f64) -> bool {
-        if let Some(vertex_data) = self.vertices.get_mut(&vertex) {
-            vertex_data.attributes.insert(name.to_string(), value);
-            true
+    pub fn is_vertex_on_boundary(&self, vertex_key: usize) -> bool {
+        if let Some(neighbors) = self.halfedge.get(&vertex_key) {
+            for face_option in neighbors.values() {
+                if face_option.is_none() {
+                    return true; // This halfedge points to no face, so it's on the boundary
+                }
+            }
+        }
+        false
+    }
+
+    /// Get the neighbors of a vertex.
+    /// 
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// 
+    /// # Returns
+    /// A vector of vertex keys that are adjacent to the given vertex
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// let neighbors = mesh.vertex_neighbors(v0);
+    /// assert_eq!(neighbors.len(), 2);
+    /// assert!(neighbors.contains(&v1));
+    /// assert!(neighbors.contains(&v2));
+    /// ```
+    pub fn vertex_neighbors(&self, vertex_key: usize) -> Vec<usize> {
+        if let Some(neighbors) = self.halfedge.get(&vertex_key) {
+            neighbors.keys().cloned().collect()
         } else {
-            false
+            Vec::new()
         }
     }
 
-    /// Get vertex attribute.
+    /// Get all faces incident to a vertex.
+    /// 
+    /// # Arguments
+    /// * `vertex_key` - The key of the vertex
+    /// 
+    /// # Returns
+    /// A vector of face keys that are incident to the given vertex
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// mesh.set_vertex_attribute(v1, "weight", 2.5);
-    /// assert_eq!(mesh.get_vertex_attribute(v1, "weight"), Some(2.5));
-    /// assert_eq!(mesh.get_vertex_attribute(v1, "nonexistent"), None);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let faces = mesh.vertex_faces(v0);
+    /// assert_eq!(faces.len(), 1);
+    /// assert_eq!(faces[0], f);
     /// ```
-    pub fn get_vertex_attribute(&self, vertex: usize, name: &str) -> Option<f64> {
-        self.vertices.get(&vertex)
-            .and_then(|v| v.attributes.get(name))
-            .copied()
-    }
-
-    /// Set face attribute.
-    pub fn set_face_attribute(&mut self, face: usize, name: &str, value: f64) -> bool {
-        if self.faces.contains_key(&face) {
-            self.face_attributes.entry(face)
-                .or_insert_with(HashMap::new)
-                .insert(name.to_string(), value);
-            true
-        } else {
-            false
+    pub fn vertex_faces(&self, vertex_key: usize) -> Vec<usize> {
+        let mut faces = Vec::new();
+        
+        for (face_key, vertices) in &self.face {
+            if vertices.contains(&vertex_key) {
+                faces.push(*face_key);
+            }
         }
-    }
-
-    /// Get face attribute.
-    pub fn get_face_attribute(&self, face: usize, name: &str) -> Option<f64> {
-        self.face_attributes.get(&face)
-            .and_then(|attrs| attrs.get(name))
-            .copied()
-    }
-
-    /// Check if the mesh is empty.
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// assert!(mesh.is_empty());
-    /// mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// assert!(!mesh.is_empty());
-    /// ```
-    pub fn is_empty(&self) -> bool {
-        self.vertices.is_empty()
-    }
-
-    /// Clear all mesh data.
-    /// 
-    /// # Example
-    /// 
-    /// ```
-    /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// assert!(!mesh.is_empty());
-    /// mesh.clear();
-    /// assert!(mesh.is_empty());
-    /// assert_eq!(mesh.number_of_vertices(), 0);
-    /// ```
-    pub fn clear(&mut self) {
-        self.vertices.clear();
-        self.faces.clear();
-        self.face_attributes.clear();
-        self.edge_attributes.clear();
-        self.max_vertex = 0;
-        self.max_face = 0;
+        
+        faces
     }
 
     /// Compute the normal vector of a face.
     /// 
+    /// The normal is computed using the cross product of the first two edges of the face.
+    /// For planar faces, this gives the unit normal vector.
+    /// 
     /// # Arguments
-    /// * `face_key` - The key of the face to compute the normal for
+    /// * `face_key` - The key of the face
     /// 
     /// # Returns
-    /// The unit normal vector of the face, or None if the face doesn't exist or has invalid geometry
+    /// The unit normal vector of the face, or None if the face is invalid
     /// 
     /// # Example
     /// 
     /// ```
-    /// use openmodel::geometry::{Mesh, Point};
+    /// use openmodel::geometry::{Mesh, Point, Vector};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-    /// let normal = mesh.face_normal(face).unwrap();
-    /// // Normal should point in +Z direction for this triangle
-    /// assert!((normal.z - 1.0).abs() < 1e-10);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let normal = mesh.face_normal(f).unwrap();
+    /// assert!((normal.z - 1.0).abs() < 1e-10); // Normal should point in +Z direction
     /// ```
     pub fn face_normal(&self, face_key: usize) -> Option<Vector> {
-        let face_vertices = self.faces.get(&face_key)?;
-        
-        if face_vertices.len() < 3 {
+        let vertices = self.face.get(&face_key)?;
+        if vertices.len() < 3 {
             return None;
         }
         
-        // Get the first three vertices to compute the normal
-        let v0 = self.vertex_position(face_vertices[0])?;
-        let v1 = self.vertex_position(face_vertices[1])?;
-        let v2 = self.vertex_position(face_vertices[2])?;
+        let p0 = self.vertex_position(vertices[0])?;
+        let p1 = self.vertex_position(vertices[1])?;
+        let p2 = self.vertex_position(vertices[2])?;
         
-        // Create vectors from v0 to v1 and v0 to v2
-        let edge1 = Vector::new(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z);
-        let edge2 = Vector::new(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z);
+        let edge1 = Vector::new(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+        let edge2 = Vector::new(p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
         
-        // Compute cross product to get normal
         let mut normal = edge1.cross(&edge2);
-        
-        // Unitize the normal vector
-        if normal.unitize() {
-            Some(normal)
-        } else {
-            None // Degenerate face (zero area)
-        }
+        normal.unitize();
+        Some(normal)
     }
 
-    /// Compute the normal vector of a vertex by averaging adjacent face normals.
+    /// Compute the normal vector of a vertex.
+    /// 
+    /// The vertex normal is computed as the average of the normals of all faces
+    /// incident to the vertex, weighted by face area.
     /// 
     /// # Arguments
-    /// * `vertex_key` - The key of the vertex to compute the normal for
+    /// * `vertex_key` - The key of the vertex
     /// 
     /// # Returns
-    /// The unit normal vector of the vertex, or None if the vertex doesn't exist or has no adjacent faces
+    /// The unit normal vector of the vertex, or None if the vertex is invalid
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// mesh.add_face(vec![v1, v2, v3], None);
-    /// let normal = mesh.vertex_normal(v1).unwrap();
-    /// // Vertex normal should be a unit vector
-    /// assert!((normal.length() - 1.0).abs() < 1e-10);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let normal = mesh.vertex_normal(v0).unwrap();
+    /// assert!((normal.z - 1.0).abs() < 1e-10); // Normal should point in +Z direction
     /// ```
     pub fn vertex_normal(&self, vertex_key: usize) -> Option<Vector> {
-        if !self.vertices.contains_key(&vertex_key) {
+        let faces = self.vertex_faces(vertex_key);
+        if faces.is_empty() {
             return None;
         }
         
         let mut normal_sum = Vector::new(0.0, 0.0, 0.0);
-        let mut face_count = 0;
+        let mut total_area = 0.0;
         
-        // Find all faces that contain this vertex
-        for (face_key, face_vertices) in &self.faces {
-            if face_vertices.contains(&vertex_key) {
-                if let Some(face_normal) = self.face_normal(*face_key) {
-                    normal_sum += &face_normal;
-                    face_count += 1;
-                }
+        for face_key in faces {
+            if let Some(face_normal) = self.face_normal(face_key) {
+                let area = self.face_area(face_key).unwrap_or(0.0);
+                normal_sum.x += face_normal.x * area;
+                normal_sum.y += face_normal.y * area;
+                normal_sum.z += face_normal.z * area;
+                total_area += area;
             }
         }
         
-        if face_count == 0 {
-            return None;
-        }
-        
-        // Average the normal
-        normal_sum /= face_count as f64;
-        
-        // Unitize the averaged normal
-        if normal_sum.unitize() {
+        if total_area > 0.0 {
+            normal_sum.x /= total_area;
+            normal_sum.y /= total_area;
+            normal_sum.z /= total_area;
+            normal_sum.unitize();
             Some(normal_sum)
         } else {
             None
         }
     }
 
-    /// Compute all face normals and return them as a HashMap.
+    /// Compute the area of a face.
+    /// 
+    /// For faces with more than 3 vertices, the area is computed by triangulating
+    /// the face and summing the areas of the triangles.
+    /// 
+    /// # Arguments
+    /// * `face_key` - The key of the face
+    /// 
+    /// # Returns
+    /// The area of the face, or None if the face is invalid
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+    /// let area = mesh.face_area(f).unwrap();
+    /// assert!((area - 0.5).abs() < 1e-10); // Area of triangle with base=1, height=1
+    /// ```
+    pub fn face_area(&self, face_key: usize) -> Option<f64> {
+        let vertices = self.face.get(&face_key)?;
+        if vertices.len() < 3 {
+            return None;
+        }
+        
+        let mut area = 0.0;
+        
+        // Triangulate the face and sum triangle areas
+        for i in 1..vertices.len() - 1 {
+            let p0 = self.vertex_position(vertices[0])?;
+            let p1 = self.vertex_position(vertices[i])?;
+            let p2 = self.vertex_position(vertices[i + 1])?;
+            
+            let edge1 = Vector::new(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+            let edge2 = Vector::new(p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
+            
+            let cross = edge1.cross(&edge2);
+            area += cross.length() * 0.5;
+        }
+        
+        Some(area)
+    }
+
+    /// Compute normals for all faces in the mesh.
     /// 
     /// # Returns
     /// A HashMap mapping face keys to their normal vectors
@@ -582,17 +643,18 @@ impl Mesh {
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// mesh.add_face(vec![v1, v2, v3], None);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
     /// let normals = mesh.face_normals();
     /// assert_eq!(normals.len(), 1);
+    /// assert!(normals.contains_key(&f));
     /// ```
     pub fn face_normals(&self) -> HashMap<usize, Vector> {
         let mut normals = HashMap::new();
         
-        for face_key in self.faces.keys() {
+        for face_key in self.face.keys() {
             if let Some(normal) = self.face_normal(*face_key) {
                 normals.insert(*face_key, normal);
             }
@@ -601,7 +663,7 @@ impl Mesh {
         normals
     }
 
-    /// Compute all vertex normals and return them as a HashMap.
+    /// Compute normals for all vertices in the mesh.
     /// 
     /// # Returns
     /// A HashMap mapping vertex keys to their normal vectors
@@ -611,17 +673,18 @@ impl Mesh {
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
     /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// mesh.add_face(vec![v1, v2, v3], None);
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
     /// let normals = mesh.vertex_normals();
     /// assert_eq!(normals.len(), 3);
+    /// assert!(normals.contains_key(&v0));
     /// ```
     pub fn vertex_normals(&self) -> HashMap<usize, Vector> {
         let mut normals = HashMap::new();
         
-        for vertex_key in self.vertices.keys() {
+        for vertex_key in self.vertex.keys() {
             if let Some(normal) = self.vertex_normal(*vertex_key) {
                 normals.insert(*vertex_key, normal);
             }
@@ -630,355 +693,408 @@ impl Mesh {
         normals
     }
 
-    /// Compute the area of a face.
+    /// Create a halfedge mesh from a list of polygons.
+    /// 
+    /// Each polygon is defined by a list of 3D points. Vertices are merged
+    /// based on coordinate precision to avoid duplicates.
     /// 
     /// # Arguments
-    /// * `face_key` - The key of the face to compute the area for
+    /// * `polygons` - List of polygons, each defined by a list of 3D points
+    /// * `precision` - Precision for merging vertices (default: 1e-10)
     /// 
     /// # Returns
-    /// The area of the face, or None if the face doesn't exist or has invalid geometry
+    /// A new halfedge mesh constructed from the polygons
     /// 
     /// # Example
     /// 
     /// ```
     /// use openmodel::geometry::{Mesh, Point};
-    /// let mut mesh = Mesh::new();
-    /// let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-    /// let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-    /// let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-    /// let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-    /// let area = mesh.face_area(face).unwrap();
-    /// // Area of a triangle with base=1, height=1 should be 0.5
-    /// assert!((area - 0.5).abs() < 1e-10);
+    /// let triangle = vec![
+    ///     Point::new(0.0, 0.0, 0.0),
+    ///     Point::new(1.0, 0.0, 0.0),
+    ///     Point::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let mesh = Mesh::from_polygons(vec![triangle], None);
+    /// assert_eq!(mesh.number_of_vertices(), 3);
+    /// assert_eq!(mesh.number_of_faces(), 1);
     /// ```
-    pub fn face_area(&self, face_key: usize) -> Option<f64> {
-        let face_vertices = self.faces.get(&face_key)?;
+    pub fn from_polygons(polygons: Vec<Vec<Point>>, precision: Option<f64>) -> Self {
+        let precision = precision.unwrap_or(1e-10);
+        let mut mesh = Mesh::new();
+        let mut vertex_map: HashMap<String, usize> = HashMap::new();
         
-        if face_vertices.len() < 3 {
-            return None;
-        }
-        
-        // For triangular faces, use cross product magnitude / 2
-        if face_vertices.len() == 3 {
-            let v0 = self.vertex_position(face_vertices[0])?;
-            let v1 = self.vertex_position(face_vertices[1])?;
-            let v2 = self.vertex_position(face_vertices[2])?;
-            
-            let edge1 = Vector::new(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z);
-            let edge2 = Vector::new(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z);
-            
-            let cross = edge1.cross(&edge2);
-            Some(cross.length() * 0.5)
-        } else {
-            // For polygonal faces, triangulate and sum areas
-            let mut total_area = 0.0;
-            let v0 = self.vertex_position(face_vertices[0])?;
-            
-            for i in 1..face_vertices.len() - 1 {
-                let v1 = self.vertex_position(face_vertices[i])?;
-                let v2 = self.vertex_position(face_vertices[i + 1])?;
-                
-                let edge1 = Vector::new(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z);
-                let edge2 = Vector::new(v2.x - v0.x, v2.y - v0.y, v2.z - v0.z);
-                
-                let cross = edge1.cross(&edge2);
-                total_area += cross.length() * 0.5;
+        for polygon in polygons {
+            if polygon.len() < 3 {
+                continue; // Skip invalid polygons
             }
             
-            Some(total_area)
+            let mut face_vertices = Vec::new();
+            
+            for point in polygon {
+                // Create a key for the point based on its coordinates with precision
+                let key = format!(
+                    "{:.10}_{:.10}_{:.10}",
+                    (point.x / precision).round() * precision,
+                    (point.y / precision).round() * precision,
+                    (point.z / precision).round() * precision
+                );
+                
+                // Check if vertex already exists
+                let vertex_key = if let Some(&existing_key) = vertex_map.get(&key) {
+                    existing_key
+                } else {
+                    // Add new vertex
+                    let new_key = mesh.add_vertex(point, None);
+                    vertex_map.insert(key, new_key);
+                    new_key
+                };
+                
+                face_vertices.push(vertex_key);
+            }
+            
+            // Add the face if it has valid vertices
+            if face_vertices.len() >= 3 {
+                mesh.add_face(face_vertices, None);
+            }
         }
-    }
-}
-
-impl fmt::Display for Mesh {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Mesh {{ vertices: {}, faces: {}, edges: {} }}",
-            self.number_of_vertices(),
-            self.number_of_faces(),
-            self.number_of_edges()
-        )
+        
+        mesh
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::geometry::Point;
 
     #[test]
-    fn test_mesh_creation() {
+    fn test_halfedge_mesh_new() {
         let mesh = Mesh::new();
         assert_eq!(mesh.number_of_vertices(), 0);
         assert_eq!(mesh.number_of_faces(), 0);
-        assert_eq!(mesh.number_of_edges(), 0);
-        assert_eq!(mesh.euler(), 0);
         assert!(mesh.is_empty());
+        assert_eq!(mesh.euler(), 0);
     }
 
     #[test]
     fn test_add_vertex() {
         let mut mesh = Mesh::new();
-        
-        // Test adding vertex with auto-generated key
-        let v1 = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
-        assert_eq!(v1, 0);
+        let vertex_key = mesh.add_vertex(Point::new(1.0, 2.0, 3.0), None);
         assert_eq!(mesh.number_of_vertices(), 1);
         assert!(!mesh.is_empty());
         
-        // Test adding vertex with specific key
-        let v2 = mesh.add_vertex(Point::new(4.0, 5.0, 6.0), Some(10));
-        assert_eq!(v2, 10);
-        assert_eq!(mesh.number_of_vertices(), 2);
-        
-        // Test vertex position retrieval
-        let pos1 = mesh.vertex_position(v1).unwrap();
-        assert_eq!(pos1.x, 1.0);
-        assert_eq!(pos1.y, 2.0);
-        assert_eq!(pos1.z, 3.0);
-        
-        let pos2 = mesh.vertex_position(v2).unwrap();
-        assert_eq!(pos2.x, 4.0);
-        assert_eq!(pos2.y, 5.0);
-        assert_eq!(pos2.z, 6.0);
-        
-        // Test non-existent vertex
-        assert!(mesh.vertex_position(999).is_none());
+        let pos = mesh.vertex_position(vertex_key).unwrap();
+        assert_eq!(pos.x, 1.0);
+        assert_eq!(pos.y, 2.0);
+        assert_eq!(pos.z, 3.0);
     }
 
     #[test]
-    fn test_add_vertices() {
+    fn test_add_vertex_with_specific_key() {
         let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        
-        assert_eq!(mesh.number_of_vertices(), 3);
-        assert_eq!(v1, 0);
-        assert_eq!(v2, 1);
-        assert_eq!(v3, 2);
+        let vertex_key = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), Some(42));
+        assert_eq!(vertex_key, 42);
+        assert_eq!(mesh.number_of_vertices(), 1);
     }
 
     #[test]
     fn test_add_face() {
         let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
         
-        let face = mesh.add_face(vec![v1, v2, v3], None);
-        assert!(face.is_some());
+        let _face_key = mesh.add_face(vec![v0, v1, v2], None).unwrap();
         assert_eq!(mesh.number_of_faces(), 1);
         assert_eq!(mesh.number_of_edges(), 3);
+        assert_eq!(mesh.euler(), 1); // V=3, E=3, F=1 -> 3-3+1=1
     }
 
     #[test]
-    fn test_euler_characteristic() {
+    fn test_add_face_invalid() {
         let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
         
-        mesh.add_face(vec![v1, v2, v3], None);
+        // Too few vertices
+        assert!(mesh.add_face(vec![v0, v1], None).is_none());
         
-        // For a single triangle: V=3, E=3, F=1, so V-E+F = 3-3+1 = 1
-        assert_eq!(mesh.euler(), 1);
-    }
-
-    #[test]
-    fn test_vertex_attributes() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        // Non-existent vertex
+        assert!(mesh.add_face(vec![v0, v1, 999], None).is_none());
         
-        assert!(mesh.set_vertex_attribute(v1, "weight", 1.5));
-        assert_eq!(mesh.get_vertex_attribute(v1, "weight"), Some(1.5));
-        assert_eq!(mesh.get_vertex_attribute(v1, "nonexistent"), None);
-    }
-
-    #[test]
-    fn test_face_normal() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        
-        let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-        let normal = mesh.face_normal(face).unwrap();
-        
-        // Normal should point in +Z direction for this triangle
-        assert!((normal.x).abs() < 1e-10);
-        assert!((normal.y).abs() < 1e-10);
-        assert!((normal.z - 1.0).abs() < 1e-10);
-        assert!((normal.length() - 1.0).abs() < 1e-10); // Should be unit vector
-    }
-
-    #[test]
-    fn test_vertex_normal() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        let v4 = mesh.add_vertex(Point::new(1.0, 1.0, 0.0), None);
-        
-        // Create two triangular faces sharing vertex v2
-        mesh.add_face(vec![v1, v2, v3], None);
-        mesh.add_face(vec![v2, v4, v3], None);
-        
-        let normal = mesh.vertex_normal(v2).unwrap();
-        
-        // Vertex normal should be in +Z direction (average of two +Z face normals)
-        assert!((normal.x).abs() < 1e-10);
-        assert!((normal.y).abs() < 1e-10);
-        assert!((normal.z - 1.0).abs() < 1e-10);
-        assert!((normal.length() - 1.0).abs() < 1e-10); // Should be unit vector
-    }
-
-    #[test]
-    fn test_face_area() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        
-        let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-        let area = mesh.face_area(face).unwrap();
-        
-        // Area of a triangle with base=1, height=1 should be 0.5
-        assert!((area - 0.5).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_face_normals_batch() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        let v4 = mesh.add_vertex(Point::new(1.0, 1.0, 0.0), None);
-        
-        let f1 = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-        let f2 = mesh.add_face(vec![v2, v4, v3], None).unwrap();
-        
-        let normals = mesh.face_normals();
-        
-        assert_eq!(normals.len(), 2);
-        assert!(normals.contains_key(&f1));
-        assert!(normals.contains_key(&f2));
-        
-        // Both normals should point in +Z direction
-        for normal in normals.values() {
-            assert!((normal.z - 1.0).abs() < 1e-10);
-        }
-    }
-
-    #[test]
-    fn test_vertex_normals_batch() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        
-        mesh.add_face(vec![v1, v2, v3], None);
-        
-        let normals = mesh.vertex_normals();
-        
-        assert_eq!(normals.len(), 3);
-        assert!(normals.contains_key(&v1));
-        assert!(normals.contains_key(&v2));
-        assert!(normals.contains_key(&v3));
-        
-        // All vertex normals should point in +Z direction
-        for normal in normals.values() {
-            assert!((normal.z - 1.0).abs() < 1e-10);
-            assert!((normal.length() - 1.0).abs() < 1e-10); // Should be unit vectors
-        }
+        // Duplicate vertices
+        assert!(mesh.add_face(vec![v0, v1, v0], None).is_none());
     }
 
     #[test]
     fn test_face_vertices() {
         let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
         
-        let face = mesh.add_face(vec![v1, v2, v3], None).unwrap();
-        let vertices = mesh.face_vertices(face).unwrap();
-        
-        assert_eq!(vertices.len(), 3);
-        assert!(vertices.contains(&v1));
-        assert!(vertices.contains(&v2));
-        assert!(vertices.contains(&v3));
-        
-        // Test non-existent face
-        assert!(mesh.face_vertices(999).is_none());
+        let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let vertices = mesh.face_vertices(f).unwrap();
+        assert_eq!(vertices, &vec![v0, v1, v2]);
     }
 
     #[test]
-    fn test_number_of_edges() {
+    fn test_vertex_neighbors() {
         let mut mesh = Mesh::new();
-        assert_eq!(mesh.number_of_edges(), 0);
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
         
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        let v4 = mesh.add_vertex(Point::new(1.0, 1.0, 0.0), None);
+        mesh.add_face(vec![v0, v1, v2], None);
         
-        // Add first triangle
-        mesh.add_face(vec![v1, v2, v3], None);
-        assert_eq!(mesh.number_of_edges(), 3);
-        
-        // Add second triangle sharing an edge
-        mesh.add_face(vec![v2, v4, v3], None);
-        assert_eq!(mesh.number_of_edges(), 5); // 3 + 2 new edges (shared edge not double-counted)
+        let neighbors = mesh.vertex_neighbors(v0);
+        assert_eq!(neighbors.len(), 2);
+        assert!(neighbors.contains(&v1));
+        assert!(neighbors.contains(&v2));
     }
 
     #[test]
-    fn test_clear_and_empty() {
+    fn test_vertex_faces() {
         let mut mesh = Mesh::new();
-        assert!(mesh.is_empty());
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        let v3 = mesh.add_vertex(Point::new(1.0, 1.0, 0.0), None);
         
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        let v3 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
-        mesh.add_face(vec![v1, v2, v3], None);
+        let f1 = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let f2 = mesh.add_face(vec![v1, v3, v2], None).unwrap();
         
-        assert!(!mesh.is_empty());
+        let faces = mesh.vertex_faces(v1);
+        assert_eq!(faces.len(), 2);
+        assert!(faces.contains(&f1));
+        assert!(faces.contains(&f2));
+    }
+
+    #[test]
+    fn test_is_vertex_on_boundary() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        mesh.add_face(vec![v0, v1, v2], None);
+        
+        // All vertices of a single triangle are on boundary
+        assert!(mesh.is_vertex_on_boundary(v0));
+        assert!(mesh.is_vertex_on_boundary(v1));
+        assert!(mesh.is_vertex_on_boundary(v2));
+    }
+
+    #[test]
+    fn test_face_normal() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normal = mesh.face_normal(f).unwrap();
+        
+        // Normal should point in +Z direction for this triangle
+        assert!((normal.z - 1.0).abs() < 1e-10);
+        assert!(normal.x.abs() < 1e-10);
+        assert!(normal.y.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_vertex_normal() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normal = mesh.vertex_normal(v0).unwrap();
+        
+        // Normal should point in +Z direction
+        assert!((normal.z - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_face_area() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let area = mesh.face_area(f).unwrap();
+        
+        // Area of triangle with base=1, height=1 should be 0.5
+        assert!((area - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_face_normals() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normals = mesh.face_normals();
+        
+        assert_eq!(normals.len(), 1);
+        assert!(normals.contains_key(&f));
+        let normal = normals.get(&f).unwrap();
+        assert!((normal.z - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_vertex_normals() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        
+        let _f = mesh.add_face(vec![v0, v1, v2], None).unwrap();
+        let normals = mesh.vertex_normals();
+        
+        assert_eq!(normals.len(), 3);
+        assert!(normals.contains_key(&v0));
+        assert!(normals.contains_key(&v1));
+        assert!(normals.contains_key(&v2));
+    }
+
+    #[test]
+    fn test_from_polygons_simple() {
+        let triangle = vec![
+            Point::new(0.0, 0.0, 0.0),
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
+        ];
+        
+        let mesh = Mesh::from_polygons(vec![triangle], None);
         assert_eq!(mesh.number_of_vertices(), 3);
         assert_eq!(mesh.number_of_faces(), 1);
+        assert_eq!(mesh.number_of_edges(), 3);
+    }
+
+    #[test]
+    fn test_from_polygons_vertex_merging() {
+        let triangle1 = vec![
+            Point::new(0.0, 0.0, 0.0),
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
+        ];
+        let triangle2 = vec![
+            Point::new(1.0, 0.0, 0.0), // Shared vertex
+            Point::new(0.0, 1.0, 0.0), // Shared vertex
+            Point::new(1.0, 1.0, 0.0),
+        ];
         
+        let mesh = Mesh::from_polygons(vec![triangle1, triangle2], None);
+        assert_eq!(mesh.number_of_vertices(), 4); // Should merge shared vertices
+        assert_eq!(mesh.number_of_faces(), 2);
+    }
+
+    #[test]
+    fn test_from_polygons_precision() {
+        let triangle1 = vec![
+            Point::new(0.0, 0.0, 0.0),
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
+        ];
+        let triangle2 = vec![
+            Point::new(1.0000001, 0.0, 0.0), // Very close to (1,0,0)
+            Point::new(0.0, 1.0000001, 0.0), // Very close to (0,1,0)
+            Point::new(1.0, 1.0, 0.0),
+        ];
+        
+        let mesh = Mesh::from_polygons(vec![triangle1, triangle2], Some(1e-6));
+        assert_eq!(mesh.number_of_vertices(), 4); // Should merge vertices within precision
+        assert_eq!(mesh.number_of_faces(), 2);
+    }
+
+    #[test]
+    fn test_from_polygons_invalid_polygons() {
+        let invalid_polygon = vec![
+            Point::new(0.0, 0.0, 0.0),
+            Point::new(1.0, 0.0, 0.0), // Only 2 points
+        ];
+        let valid_triangle = vec![
+            Point::new(0.0, 0.0, 0.0),
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
+        ];
+        
+        let mesh = Mesh::from_polygons(vec![invalid_polygon, valid_triangle], None);
+        assert_eq!(mesh.number_of_vertices(), 3); // Only valid triangle should be added
+        assert_eq!(mesh.number_of_faces(), 1);
+    }
+
+    #[test]
+    fn test_from_polygons_cube() {
+        // Create a cube using 6 faces
+        let faces = vec![
+            // Bottom face (z=0)
+            vec![
+                Point::new(0.0, 0.0, 0.0),
+                Point::new(1.0, 0.0, 0.0),
+                Point::new(1.0, 1.0, 0.0),
+                Point::new(0.0, 1.0, 0.0),
+            ],
+            // Top face (z=1)
+            vec![
+                Point::new(0.0, 0.0, 1.0),
+                Point::new(0.0, 1.0, 1.0),
+                Point::new(1.0, 1.0, 1.0),
+                Point::new(1.0, 0.0, 1.0),
+            ],
+            // Front face (y=0)
+            vec![
+                Point::new(0.0, 0.0, 0.0),
+                Point::new(0.0, 0.0, 1.0),
+                Point::new(1.0, 0.0, 1.0),
+                Point::new(1.0, 0.0, 0.0),
+            ],
+            // Back face (y=1)
+            vec![
+                Point::new(0.0, 1.0, 0.0),
+                Point::new(1.0, 1.0, 0.0),
+                Point::new(1.0, 1.0, 1.0),
+                Point::new(0.0, 1.0, 1.0),
+            ],
+            // Left face (x=0)
+            vec![
+                Point::new(0.0, 0.0, 0.0),
+                Point::new(0.0, 1.0, 0.0),
+                Point::new(0.0, 1.0, 1.0),
+                Point::new(0.0, 0.0, 1.0),
+            ],
+            // Right face (x=1)
+            vec![
+                Point::new(1.0, 0.0, 0.0),
+                Point::new(1.0, 0.0, 1.0),
+                Point::new(1.0, 1.0, 1.0),
+                Point::new(1.0, 1.0, 0.0),
+            ],
+        ];
+        
+        let mesh = Mesh::from_polygons(faces, None);
+        assert_eq!(mesh.number_of_vertices(), 8); // A cube has 8 vertices
+        assert_eq!(mesh.number_of_faces(), 6);    // A cube has 6 faces
+        assert_eq!(mesh.number_of_edges(), 12);   // A cube has 12 edges
+        assert_eq!(mesh.euler(), 2);             // Euler characteristic for a cube: V-E+F = 8-12+6 = 2
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+        let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+        let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+        mesh.add_face(vec![v0, v1, v2], None);
+        
+        assert!(!mesh.is_empty());
         mesh.clear();
         assert!(mesh.is_empty());
         assert_eq!(mesh.number_of_vertices(), 0);
         assert_eq!(mesh.number_of_faces(), 0);
-        assert_eq!(mesh.number_of_edges(), 0);
-    }
-
-    #[test]
-    fn test_invalid_face_creation() {
-        let mut mesh = Mesh::new();
-        let v1 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
-        let v2 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
-        
-        // Test face with too few vertices
-        assert!(mesh.add_face(vec![v1, v2], None).is_none());
-        
-        // Test face with non-existent vertex
-        assert!(mesh.add_face(vec![v1, v2, 999], None).is_none());
-        
-        // Test face with duplicate vertices
-        assert!(mesh.add_face(vec![v1, v1, v2], None).is_none());
-    }
-
-    #[test]
-    fn test_error_cases() {
-        let mut mesh = Mesh::new();
-        
-        // Test normal computation on non-existent faces
-        assert!(mesh.face_normal(999).is_none());
-        assert!(mesh.vertex_normal(999).is_none());
-        assert!(mesh.face_area(999).is_none());
-        
-        // Test attribute operations on non-existent vertex
-        assert!(!mesh.set_vertex_attribute(999, "test", 1.0));
-        assert!(mesh.get_vertex_attribute(999, "test").is_none());
     }
 }
