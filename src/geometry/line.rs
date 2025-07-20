@@ -1,6 +1,7 @@
 use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::common::Data;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 use std::fmt;
@@ -92,7 +93,7 @@ impl Line{
             x1,
             y1,
             z1,
-            data: Data::new(&name),
+            data: Data::with_name(&name),
         }
     }
 
@@ -540,6 +541,19 @@ impl fmt::Display for Line{
     /// println!("{}", line);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Line {{ start: {}, {}, {}, end {}, {}, {}, Data: {} }}", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1, self.data)
+        write!(f, "Line({}, {}, {}, {}, {}, {})", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Line {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Line {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

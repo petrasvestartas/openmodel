@@ -1,0 +1,493 @@
+{
+  "clouds": [
+    {
+      "colors": [
+        {
+          "a": 255,
+          "b": 0,
+          "data": {
+            "guid": "0020c7ec-7196-4090-a885-0587e0679701",
+            "name": "Color"
+          },
+          "g": 0,
+          "r": 255
+        },
+        {
+          "a": 255,
+          "b": 0,
+          "data": {
+            "guid": "208a0138-5bda-4b5c-9dbc-e7ffd7e5caa7",
+            "name": "Color"
+          },
+          "g": 255,
+          "r": 0
+        }
+      ],
+      "data": {
+        "guid": "7c2b0efe-3741-4e24-a390-708cb8c41e65",
+        "name": ""
+      },
+      "normals": [
+        {
+          "data": {
+            "guid": "c6802690-4316-4c25-a6fb-6318d0e54567",
+            "name": "Vector"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        {
+          "data": {
+            "guid": "74c56ff5-90ee-4c14-b583-6b83b2d1f96d",
+            "name": "Vector"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        }
+      ],
+      "points": [
+        {
+          "data": {
+            "guid": "72a9b50a-8ae3-4833-898d-f8a0cb1f5931",
+            "name": "Point"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        {
+          "data": {
+            "guid": "27b0278b-c8fa-43a4-af04-590da8c7546d",
+            "name": "Point"
+          },
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      ],
+      "xform": {
+        "data": {
+          "guid": "aa9c2082-85d5-4f37-b401-445af1417c34",
+          "name": "Xform"
+        },
+        "m00": 1.0,
+        "m01": 0.0,
+        "m02": 0.0,
+        "m03": 0.0,
+        "m10": 0.0,
+        "m11": 1.0,
+        "m12": 0.0,
+        "m13": 0.0,
+        "m20": 0.0,
+        "m21": 0.0,
+        "m22": 1.0,
+        "m23": 0.0,
+        "m30": 0.0,
+        "m31": 0.0,
+        "m32": 0.0,
+        "m33": 1.0
+      }
+    }
+  ],
+  "colors": [
+    {
+      "a": 255,
+      "b": 0,
+      "data": {
+        "guid": "c38473c9-ee98-450f-90eb-cbcd358fb141",
+        "name": "Color"
+      },
+      "g": 0,
+      "r": 255
+    },
+    {
+      "a": 255,
+      "b": 0,
+      "data": {
+        "guid": "9eedaf4f-4278-4fcd-8b64-4753c0cb578a",
+        "name": "Color"
+      },
+      "g": 255,
+      "r": 0
+    },
+    {
+      "a": 255,
+      "b": 255,
+      "data": {
+        "guid": "6c549d9a-7eab-493e-a959-1e803f8a9021",
+        "name": "Color"
+      },
+      "g": 0,
+      "r": 0
+    }
+  ],
+  "lines": [
+    {
+      "data": {
+        "guid": "e1e4774c-95ab-4cf0-8059-5767b51d2125",
+        "name": "Line"
+      },
+      "x0": 0.0,
+      "x1": 1.0,
+      "y0": 0.0,
+      "y1": 0.0,
+      "z0": 0.0,
+      "z1": 0.0
+    },
+    {
+      "data": {
+        "guid": "f334e530-4dd8-40d6-87ba-3b5c9639171b",
+        "name": "Line"
+      },
+      "x0": 0.0,
+      "x1": 0.0,
+      "y0": 0.0,
+      "y1": 1.0,
+      "z0": 0.0,
+      "z1": 0.0
+    }
+  ],
+  "meshes": [
+    {
+      "data": {
+        "guid": "ff9acdde-907e-45fc-9b9e-5d801551e853",
+        "name": "Mesh"
+      },
+      "default_edge_attributes": {},
+      "default_face_attributes": {},
+      "default_vertex_attributes": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "edgedata": {},
+      "face": {
+        "1": [
+          1,
+          3,
+          5
+        ]
+      },
+      "facedata": {},
+      "halfedge": {
+        "1": {
+          "3": 1,
+          "5": null
+        },
+        "3": {
+          "1": null,
+          "5": 1
+        },
+        "5": {
+          "1": 1,
+          "3": null
+        }
+      },
+      "max_face": 2,
+      "max_vertex": 6,
+      "vertex": {
+        "1": {
+          "attributes": {},
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "3": {
+          "attributes": {},
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "5": {
+          "attributes": {},
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        }
+      }
+    }
+  ],
+  "planes": [
+    {
+      "a": 0.0,
+      "b": 0.0,
+      "c": 1.0,
+      "d": -0.0,
+      "data": {
+        "guid": "e2b04676-523a-4e36-bf8f-7097f43153f4",
+        "name": "Plane"
+      },
+      "origin": {
+        "data": {
+          "guid": "2a4984ff-7e92-499e-94d2-2eb335e8446d",
+          "name": "Point"
+        },
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "xaxis": {
+        "data": {
+          "guid": "32427b60-d34d-4021-9b40-95e1da9f3776",
+          "name": "Vector"
+        },
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "yaxis": {
+        "data": {
+          "guid": "19c8f23f-78cd-4ea0-8071-cf16ad21eeba",
+          "name": "Vector"
+        },
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "zaxis": {
+        "data": {
+          "guid": "bffccc62-c4be-403e-8ee3-b6880e581661",
+          "name": "Vector"
+        },
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      }
+    },
+    {
+      "a": 0.0,
+      "b": 0.0,
+      "c": 1.0,
+      "d": -1.0,
+      "data": {
+        "guid": "b0515b36-b3e6-44f4-bcdd-2481b2f2db0b",
+        "name": "Plane"
+      },
+      "origin": {
+        "data": {
+          "guid": "82b5e53f-8ecb-4d44-8b40-a36d5a84a7b5",
+          "name": "Point"
+        },
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "xaxis": {
+        "data": {
+          "guid": "42467b64-9929-4633-887c-9ff6d30b4dd7",
+          "name": "Vector"
+        },
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "yaxis": {
+        "data": {
+          "guid": "1cbd4fce-3c45-4cb9-8df1-f6ffce126c1e",
+          "name": "Vector"
+        },
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "zaxis": {
+        "data": {
+          "guid": "32b6455d-423b-4b9c-b279-a603ad84811d",
+          "name": "Vector"
+        },
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      }
+    }
+  ],
+  "plines": [
+    {
+      "data": {
+        "guid": "efbc0de8-667b-48f9-8a32-4484887f942e",
+        "name": ""
+      },
+      "plane": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": -1.0,
+        "d": -0.0,
+        "data": {
+          "guid": "f8323401-431c-41c2-b6a0-1a020dc6307e",
+          "name": "Plane"
+        },
+        "origin": {
+          "data": {
+            "guid": "dde90a72-e5cd-47cc-bbcd-b14290521aaf",
+            "name": "Point"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "xaxis": {
+          "data": {
+            "guid": "c9ffca3c-b3df-43ad-9be6-09eb03554752",
+            "name": "Vector"
+          },
+          "x": -0.0,
+          "y": 1.0,
+          "z": 0.0
+        },
+        "yaxis": {
+          "data": {
+            "guid": "936e510d-f1bc-4a76-bac5-228b19ef26e4",
+            "name": "Vector"
+          },
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "zaxis": {
+          "data": {
+            "guid": "9eca27ad-3eaf-4cb9-b4d4-660ac8e117b9",
+            "name": "Vector"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": -1.0
+        }
+      },
+      "points": [
+        {
+          "data": {
+            "guid": "dde90a72-e5cd-47cc-bbcd-b14290521aaf",
+            "name": "Point"
+          },
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        {
+          "data": {
+            "guid": "7c2219a9-1ca0-4697-b903-5ed3121cdfe9",
+            "name": "Point"
+          },
+          "x": 1.0,
+          "y": 1.0,
+          "z": 0.0
+        },
+        {
+          "data": {
+            "guid": "602e8edf-9805-4c0d-af8e-ff15a90b337b",
+            "name": "Point"
+          },
+          "x": 2.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      ]
+    }
+  ],
+  "points": [
+    {
+      "data": {
+        "guid": "b8c56d8f-e52d-42a1-be18-621e2edb751f",
+        "name": "Point"
+      },
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "data": {
+        "guid": "67df6d99-d165-4eab-b4b3-737a16588309",
+        "name": "Point"
+      },
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+    {
+      "data": {
+        "guid": "f8fe2177-0b9c-4829-94df-fefaae0b429d",
+        "name": "Point"
+      },
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    }
+  ],
+  "vectors": [
+    {
+      "data": {
+        "guid": "f5350973-0adf-4bc0-936f-2f345b984de4",
+        "name": "Vector"
+      },
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "data": {
+        "guid": "f15a462a-df83-405c-8c15-e6d9577d23a2",
+        "name": "Vector"
+      },
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+    {
+      "data": {
+        "guid": "3de6405d-3c88-4804-9e00-d6cdc0f9c9a8",
+        "name": "Vector"
+      },
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    }
+  ],
+  "xforms": [
+    {
+      "data": {
+        "guid": "9720650d-d557-41ab-b6f4-8cfd0f3bdf16",
+        "name": "Xform"
+      },
+      "m00": 1.0,
+      "m01": 0.0,
+      "m02": 0.0,
+      "m03": 1.0,
+      "m10": 0.0,
+      "m11": 1.0,
+      "m12": 0.0,
+      "m13": 2.0,
+      "m20": 0.0,
+      "m21": 0.0,
+      "m22": 1.0,
+      "m23": 3.0,
+      "m30": 0.0,
+      "m31": 0.0,
+      "m32": 0.0,
+      "m33": 1.0
+    },
+    {
+      "data": {
+        "guid": "c7d12bbd-7768-43ec-b67c-1e61e6e59a55",
+        "name": "Xform"
+      },
+      "m00": 2.0,
+      "m01": 0.0,
+      "m02": 0.0,
+      "m03": 0.0,
+      "m10": 0.0,
+      "m11": 2.0,
+      "m12": 0.0,
+      "m13": 0.0,
+      "m20": 0.0,
+      "m21": 0.0,
+      "m22": 2.0,
+      "m23": 0.0,
+      "m30": 0.0,
+      "m31": 0.0,
+      "m32": 0.0,
+      "m33": 1.0
+    }
+  ]
+}

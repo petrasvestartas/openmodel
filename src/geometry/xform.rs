@@ -1,8 +1,8 @@
-use crate::geometry::Point;
-use crate::geometry::Vector;
+use crate::geometry::{Point, Vector, Plane};
+use crate::common::Data;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut, Mul, MulAssign};
-use crate::common::Data;
 use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -815,5 +815,18 @@ impl fmt::Display for Xform{
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         write!(f, "Xform 4x4 {{ Row A: {}, {}, {}, {}, Row B: {}, {}, {}, {}, Row C:  {}, {}, {}, {}, Row D: {}, {}, {}, {}, Data: {} }}", self.m00, self.m01, self.m02, self.m03, self.m10, self.m11, self.m12, self.m13, self.m20, self.m21, self.m22, self.m23, self.m30, self.m31, self.m32, self.m33, self.data)
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Xform {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Xform {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

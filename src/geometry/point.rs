@@ -1,7 +1,8 @@
+use crate::common::{Data, HasJsonData, FromJsonData};
+use serde_json::Value;
 use crate::geometry::Vector;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
-use crate::common::Data;
 use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,7 +67,7 @@ impl Point {
             x,
             y,
             z,
-            data: Data::new(&name),
+            data: Data::with_name(&name),
         }
     }
 
@@ -585,6 +586,73 @@ impl fmt::Display for Point {
     /// println!("{}", p);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Point {{ x: {}, y: {}, z: {}, Data: {} }}", self.x, self.y, self.z, self.data)
+        write!(f, "Point({}, {}, {})", self.x, self.y, self.z)
+    }
+}
+
+/// Implementation for Point serialization
+impl Point {
+    /// Create a structured JSON representation similar to COMPAS
+    ///
+    /// # Arguments
+    ///
+    /// * `minimal` - If true, only includes dtype and data fields
+    ///
+    /// # Returns
+    ///
+    /// A JSON value with the point's data in COMPAS format
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// let point = Point::new(1.0, 2.0, 3.0);
+    /// let json = point.to_json_data(false);
+    /// ```
+    pub fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        let geometric_data = serde_json::json!({
+            "x": self.x,
+            "y": self.y,
+            "z": self.z
+        });
+        
+        self.data.to_json_data("openmodel.geometry/Point", geometric_data, minimal)
+    }
+}
+
+/// Implementation of HasJsonData trait for ultra-simple API
+impl HasJsonData for Point {
+    fn to_json_data(&self, minimal: bool) -> Value {
+        self.to_json_data(minimal)
+    }
+}
+
+/// Implementation of FromJsonData trait for direct deserialization
+impl FromJsonData for Point {
+    /// Create Point directly from JSON data - no casting needed!
+    /// 
+    /// # Example
+    /// ```
+    /// use openmodel::geometry::Point;
+    /// use openmodel::common::FromJsonData;
+    /// use serde_json::json;
+    /// 
+    /// let json = json!({"data": {"x": 1.0, "y": 2.0, "z": 3.0}, "name": "MyPoint"});
+    /// let point = Point::from_json_data(&json).unwrap();
+    /// assert_eq!(point.x, 1.0);
+    /// ```
+    fn from_json_data(data: &Value) -> Option<Self> {
+        let x = data["data"]["x"].as_f64()?;
+        let y = data["data"]["y"].as_f64()?;
+        let z = data["data"]["z"].as_f64()?;
+        
+        let mut point = Point::new(x, y, z);
+        
+        // Set name if available
+        if let Some(name) = data["name"].as_str() {
+            point.data.set_name(name);
+        }
+        
+        Some(point)
     }
 }

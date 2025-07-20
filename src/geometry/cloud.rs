@@ -2,6 +2,7 @@ use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::geometry::Color;
 use crate::geometry::Xform;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;
@@ -192,5 +193,18 @@ impl fmt::Display for Cloud {
             self.colors.len(),
             self.data
         )
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Cloud {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Cloud {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

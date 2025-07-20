@@ -1,4 +1,5 @@
 pub mod point;
+pub mod geometry_object;
 pub mod vector;
 pub mod line;
 pub mod color;
@@ -8,6 +9,7 @@ pub mod cloud;
 pub mod pline;
 pub mod mesh;
 
+pub use geometry_object::GeometryObject;
 pub use point::Point;
 pub use vector::Vector;
 pub use line::Line;

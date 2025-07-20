@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 use crate::common::Data;
+use crate::common::{JsonSerializable, FromJsonData};
 use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -150,10 +151,23 @@ impl fmt::Display for Color{
     ///
     /// ```
     /// use openmodel::geometry::Color;
-    /// let color = Color::default();
-    /// println!("{}", color);
+    /// let c = Color::new(100, 200, 255, 0);
+    /// println!("{}", c);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Color {{ r: {}, g {}, b: {}, a: {}, Data: {} }}", self.r, self.g, self.b, self.a, self.data)
+        write!(f, "Color({}, {}, {}, {})", self.r, self.g, self.b, self.a)
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Color {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Color {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

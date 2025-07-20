@@ -1,8 +1,9 @@
 use crate::geometry::Point;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
-use crate::common::Data;
+use crate::common::{Data, HasJsonData, FromJsonData};
 use std::fmt;
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vector {
@@ -588,5 +589,72 @@ impl fmt::Display for Vector {
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Vector {{ x: {}, y: {}, z: {}, Data: {} }}", self.x, self.y, self.z, self.data)
+    }
+}
+
+/// Implementation of DataObject trait for Vector to support COMPAS-style JSON serialization
+impl Vector {
+    /// Create a structured JSON representation similar to COMPAS
+    ///
+    /// # Arguments
+    ///
+    /// * `minimal` - If true, only includes dtype and data fields
+    ///
+    /// # Returns
+    ///
+    /// A JSON value with the vector's data in COMPAS format
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// let vector = Vector::new(1.0, 2.0, 3.0);
+    /// let json = vector.to_json_data(false);
+    /// ```
+    pub fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        let geometric_data = serde_json::json!({
+            "x": self.x,
+            "y": self.y,
+            "z": self.z
+        });
+        
+        self.data.to_json_data("openmodel.geometry/Vector", geometric_data, minimal)
+    }
+}
+
+/// Implementation of HasJsonData trait for ultra-simple API
+impl HasJsonData for Vector {
+    fn to_json_data(&self, minimal: bool) -> Value {
+        self.to_json_data(minimal)
+    }
+}
+
+/// Implementation of FromJsonData trait for direct deserialization
+impl FromJsonData for Vector {
+    /// Create Vector directly from JSON data - no casting needed!
+    /// 
+    /// # Example
+    /// ```
+    /// use openmodel::geometry::Vector;
+    /// use openmodel::common::FromJsonData;
+    /// use serde_json::json;
+    /// 
+    /// let json = json!({"data": {"x": 1.0, "y": 2.0, "z": 3.0}, "name": "MyVector"});
+    /// let vector = Vector::from_json_data(&json).unwrap();
+    /// assert_eq!(vector.x, 1.0);
+    /// ```
+    fn from_json_data(data: &Value) -> Option<Self> {
+        let x = data["data"]["x"].as_f64()?;
+        let y = data["data"]["y"].as_f64()?;
+        let z = data["data"]["z"].as_f64()?;
+        
+        let mut vector = Vector::new(x, y, z);
+        
+        // Set name if available
+        if let Some(name) = data["name"].as_str() {
+            vector.data.set_name(name);
+        }
+        
+        Some(vector)
     }
 }

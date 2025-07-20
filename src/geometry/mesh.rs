@@ -1,6 +1,9 @@
 use crate::geometry::{Point, Vector};
+use crate::common::Data;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
 /// Weighting scheme for vertex normal computation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,6 +44,8 @@ pub struct Mesh {
     max_vertex: usize,
     /// Next available face key
     max_face: usize,
+    /// Associated data - guid and name
+    pub data: Data,
 }
 
 /// Vertex data containing position and attributes
@@ -113,6 +118,7 @@ impl Mesh {
             default_edge_attributes: HashMap::new(),
             max_vertex: 0,
             max_face: 0,
+            data: Data::with_name("Mesh"),
         }
     }
 
@@ -1314,5 +1320,82 @@ mod tests {
         assert!(mesh.is_empty());
         assert_eq!(mesh.number_of_vertices(), 0);
         assert_eq!(mesh.number_of_faces(), 0);
+    }
+}
+
+/// Implementation of DataObject trait for Mesh to support COMPAS-style JSON serialization
+impl Mesh {
+    /// Get the type identifier for polymorphic deserialization
+    pub fn dtype(&self) -> &'static str {
+        "openmodel.geometry/Mesh"
+    }
+    
+    /// Get the object's mesh data for serialization
+    pub fn geometric_data(&self) -> serde_json::Value {
+        // Convert vertex data to serializable format
+        let vertices: HashMap<String, serde_json::Value> = self.vertex.iter()
+            .map(|(k, v)| (k.to_string(), serde_json::json!({
+                "x": v.x,
+                "y": v.y,
+                "z": v.z,
+                "attributes": v.attributes
+            })))
+            .collect();
+        
+        // Convert face data to serializable format
+        let faces: HashMap<String, Vec<usize>> = self.face.iter()
+            .map(|(k, v)| (k.to_string(), v.clone()))
+            .collect();
+        
+        // Convert halfedge data to serializable format
+        let halfedges: HashMap<String, serde_json::Value> = self.halfedge.iter()
+            .map(|(k, v)| (k.to_string(), serde_json::json!(v)))
+            .collect();
+        
+        serde_json::json!({
+            "vertices": vertices,
+            "faces": faces,
+            "halfedges": halfedges,
+            "facedata": self.facedata,
+            "edgedata": self.edgedata,
+            "default_vertex_attributes": self.default_vertex_attributes,
+            "default_face_attributes": self.default_face_attributes,
+            "default_edge_attributes": self.default_edge_attributes,
+            "max_vertex": self.max_vertex,
+            "max_face": self.max_face
+        })
+    }
+    
+    /// Get the object's GUID
+    pub fn guid(&self) -> Uuid {
+        self.data.guid()
+    }
+    
+    /// Get the object's name
+    pub fn name(&self) -> &str {
+        self.data.name()
+    }
+    
+    /// Set the object's name
+    pub fn set_name(&mut self, name: &str) {
+        self.data.set_name(name);
+    }
+    
+    /// Create a structured JSON representation similar to COMPAS
+    pub fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        self.data.to_json_data(self.dtype(), self.geometric_data(), minimal)
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Mesh {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Mesh {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

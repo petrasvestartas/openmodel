@@ -1,9 +1,11 @@
 use crate::geometry::Point;
 use crate::geometry::Vector;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;
 use std::fmt;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Plane {
@@ -479,5 +481,76 @@ impl fmt::Display for Plane{
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         write!(f, "Plane {{ origin: {}, xaxis {}, yaxis: {}, zaxis: {}, Data: {} }}", self.origin, self.xaxis, self.yaxis, self.zaxis, self.data)
+    }
+}
+
+/// Implementation of DataObject trait for Plane to support COMPAS-style JSON serialization
+impl Plane {
+    /// Get the type identifier for polymorphic deserialization
+    pub fn dtype(&self) -> &'static str {
+        "openmodel.geometry/Plane"
+    }
+    
+    /// Get the object's geometric data for serialization
+    pub fn geometric_data(&self) -> serde_json::Value {
+        serde_json::json!({
+            "origin": {
+                "x": self.origin.x,
+                "y": self.origin.y,
+                "z": self.origin.z
+            },
+            "xaxis": {
+                "x": self.xaxis.x,
+                "y": self.xaxis.y,
+                "z": self.xaxis.z
+            },
+            "yaxis": {
+                "x": self.yaxis.x,
+                "y": self.yaxis.y,
+                "z": self.yaxis.z
+            },
+            "zaxis": {
+                "x": self.zaxis.x,
+                "y": self.zaxis.y,
+                "z": self.zaxis.z
+            },
+            "a": self.a,
+            "b": self.b,
+            "c": self.c,
+            "d": self.d
+        })
+    }
+    
+    /// Get the object's GUID
+    pub fn guid(&self) -> Uuid {
+        self.data.guid()
+    }
+    
+    /// Get the object's name
+    pub fn name(&self) -> &str {
+        self.data.name()
+    }
+    
+    /// Set the object's name
+    pub fn set_name(&mut self, name: &str) {
+        self.data.set_name(name);
+    }
+    
+    /// Create a structured JSON representation similar to COMPAS
+    pub fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        self.data.to_json_data(self.dtype(), self.geometric_data(), minimal)
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Plane {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Plane {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }

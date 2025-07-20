@@ -1,6 +1,7 @@
 use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::geometry::Plane;
+use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;
@@ -184,5 +185,18 @@ impl fmt::Display for Pline {
             self.points.len(),
             self.data
         )
+    }
+}
+
+// JSON serialization support
+impl JsonSerializable for Pline {
+    fn to_json_value(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+    }
+}
+
+impl FromJsonData for Pline {
+    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value(data.clone()).ok()
     }
 }
