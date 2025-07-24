@@ -11,6 +11,15 @@ pub struct Data {
     name: [u8; 32],
     /// Unique identifier
     guid: Uuid,
+    /// Parent element's guid (optional, empty for top-level elements)
+    parent: Option<Uuid>,
+    /// List of guids of adjacent elements (optional, mostly empty)
+    adjacency_indices: Vec<Uuid>,
+    /// List of strings representing adjacency types
+    adjacency_types: Vec<String>,
+    /// Transformation as a flattened 4x4 matrix (column-major, 16 f64 values)
+    /// Default is identity matrix
+    transformation: [f64; 16],
 }
 
 // Custom serialization to make JSON more readable
@@ -20,9 +29,13 @@ impl Serialize for Data {
         S: Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("Data", 2)?;
+        let mut state = serializer.serialize_struct("Data", 6)?;
         state.serialize_field("name", self.name())?; // Serialize as string
         state.serialize_field("guid", &self.guid)?;
+        state.serialize_field("parent", &self.parent)?;
+        state.serialize_field("adjacency_indices", &self.adjacency_indices)?;
+        state.serialize_field("adjacency_types", &self.adjacency_types)?;
+        state.serialize_field("transformation", &self.transformation)?;
         state.end()
     }
 }
@@ -41,6 +54,10 @@ impl<'de> Deserialize<'de> for Data {
         enum Field {
             Name,
             Guid,
+            Parent,
+            AdjacencyIndices,
+            AdjacencyTypes,
+            Transformation,
         }
 
         struct DataVisitor;
@@ -58,6 +75,10 @@ impl<'de> Deserialize<'de> for Data {
             {
                 let mut name: Option<String> = None;
                 let mut guid: Option<Uuid> = None;
+                let mut parent: Option<Option<Uuid>> = None;
+                let mut adjacency_indices: Option<Vec<Uuid>> = None;
+                let mut adjacency_types: Option<Vec<String>> = None;
+                let mut transformation: Option<[f64; 16]> = None;
 
                 while let Some(key) = map.next_key()? {
                     match key {
@@ -84,20 +105,52 @@ impl<'de> Deserialize<'de> for Data {
                         Field::Guid => {
                             guid = Some(map.next_value()?);
                         }
+                        Field::Parent => {
+                            parent = Some(map.next_value()?);
+                        }
+                        Field::AdjacencyIndices => {
+                            adjacency_indices = Some(map.next_value()?);
+                        }
+                        Field::AdjacencyTypes => {
+                            adjacency_types = Some(map.next_value()?);
+                        }
+                        Field::Transformation => {
+                            // Handle both array and vector formats
+                            let value = map.next_value::<serde_json::Value>()?;
+                            if let serde_json::Value::Array(arr) = value {
+                                let mut matrix = [0.0; 16];
+                                for (i, val) in arr.iter().enumerate().take(16) {
+                                    if let Some(num_val) = val.as_f64() {
+                                        matrix[i] = num_val;
+                                    }
+                                }
+                                transformation = Some(matrix);
+                            } else {
+                                return Err(de::Error::custom("transformation must be an array of 16 numbers"));
+                            }
+                        }
                     }
                 }
 
                 let name = name.ok_or_else(|| de::Error::missing_field("name"))?;
                 let guid = guid.ok_or_else(|| de::Error::missing_field("guid"))?;
+                let parent = parent.unwrap_or(None);
+                let adjacency_indices = adjacency_indices.unwrap_or_else(Vec::new);
+                let adjacency_types = adjacency_types.unwrap_or_else(Vec::new);
+                let transformation = transformation.unwrap_or_else(Data::identity_matrix);
 
                 Ok(Data {
                     name: Data::string_to_array(&name),
                     guid,
+                    parent,
+                    adjacency_indices,
+                    adjacency_types,
+                    transformation,
                 })
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["name", "guid"];
+        const FIELDS: &'static [&'static str] = &["name", "guid", "parent", "adjacency_indices", "adjacency_types", "transformation"];
         deserializer.deserialize_struct("Data", FIELDS, DataVisitor)
     }
 }
@@ -114,6 +167,10 @@ impl Data {
         Self {
             name: Self::string_to_array(name),
             guid: Uuid::new_v4(),
+            parent: None,
+            adjacency_indices: Vec::new(),
+            adjacency_types: Vec::new(),
+            transformation: Self::identity_matrix(),
         }
     }
     
@@ -143,6 +200,38 @@ impl Data {
         self.name = Self::string_to_array(name);
     }
     
+    /// Get the parent GUID
+    pub fn parent(&self) -> Option<Uuid> {
+        self.parent
+    }
+    
+    /// Set the parent GUID
+    pub fn set_parent(&mut self, parent: Option<Uuid>) {
+        self.parent = parent;
+    }
+    
+    /// Get the adjacency indices
+    pub fn adjacency_indices(&self) -> &[Uuid] {
+        &self.adjacency_indices
+    }
+    
+    /// Get the adjacency types
+    pub fn adjacency_types(&self) -> &[String] {
+        &self.adjacency_types
+    }
+    
+    /// Add an adjacency relationship
+    pub fn add_adjacency(&mut self, guid: Uuid, adjacency_type: &str) {
+        self.adjacency_indices.push(guid);
+        self.adjacency_types.push(adjacency_type.to_string());
+    }
+    
+    /// Clear all adjacencies
+    pub fn clear_adjacencies(&mut self) {
+        self.adjacency_indices.clear();
+        self.adjacency_types.clear();
+    }
+    
     /// Convert string to fixed-size array
     fn string_to_array(s: &str) -> [u8; 32] {
         let mut array = [0; 32];
@@ -158,6 +247,31 @@ impl Data {
         std::str::from_utf8(&array[..end]).unwrap_or("")
     }
     
+    /// Create a 4x4 identity matrix flattened to 16 values (column-major)
+    pub fn identity_matrix() -> [f64; 16] {
+        [
+            1.0, 0.0, 0.0, 0.0,  // First column
+            0.0, 1.0, 0.0, 0.0,  // Second column
+            0.0, 0.0, 1.0, 0.0,  // Third column
+            0.0, 0.0, 0.0, 1.0,  // Fourth column
+        ]
+    }
+    
+    /// Get the transformation matrix
+    pub fn transformation(&self) -> &[f64; 16] {
+        &self.transformation
+    }
+    
+    /// Set the transformation matrix
+    pub fn set_transformation(&mut self, matrix: [f64; 16]) {
+        self.transformation = matrix;
+    }
+    
+    /// Reset transformation to identity matrix
+    pub fn reset_transformation(&mut self) {
+        self.transformation = Self::identity_matrix();
+    }
+    
     /// Create a structured JSON representation similar to COMPAS
     pub fn to_json_data(&self, dtype: &'static str, data: Value, minimal: bool) -> serde_json::Value {
         if minimal {
@@ -170,7 +284,11 @@ impl Data {
                 "dtype": dtype,
                 "data": data,
                 "guid": self.guid,
-                "name": self.name()
+                "name": self.name(),
+                "parent": self.parent,
+                "adjacency_indices": self.adjacency_indices,
+                "adjacency_types": self.adjacency_types,
+                "transformation": self.transformation
             })
         }
     }
@@ -180,13 +298,28 @@ impl Data {
         Self {
             name: self.name,
             guid: if copy_guid { self.guid } else { Uuid::new_v4() },
+            parent: self.parent,
+            adjacency_indices: self.adjacency_indices.clone(),
+            adjacency_types: self.adjacency_types.clone(),
+            transformation: self.transformation,
         }
     }
 }
 
 impl fmt::Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Data {{ name: {}, guid: {} }}", self.name(), self.guid)
+        write!(
+            f, 
+            "Data {{ name: {}, guid: {}, parent: {:?}, adjacencies: {}, has_transform: {} }}", 
+            self.name(), 
+            self.guid,
+            self.parent,
+            self.adjacency_indices.len(),
+            !self.transformation.iter().enumerate().all(|(i, &val)| {
+                (i % 5 == 0 && (val - 1.0).abs() < f64::EPSILON) || // Diagonal elements are 1.0
+                (i % 5 != 0 && val.abs() < f64::EPSILON) // Non-diagonal elements are 0.0
+            })
+        )
     }
 }
 
@@ -206,6 +339,10 @@ mod tests {
         let data = Data::new();
         assert_eq!(data.name(), "");
         assert!(!data.guid().is_nil());
+        assert_eq!(data.parent(), None);
+        assert_eq!(data.adjacency_indices().len(), 0);
+        assert_eq!(data.adjacency_types().len(), 0);
+        assert_eq!(data.transformation(), &Data::identity_matrix());
     }
     
     #[test]
@@ -228,5 +365,72 @@ mod tests {
         assert_eq!(json["dtype"], "test_type");
         assert_eq!(json["data"]["value"], 42);
         assert_eq!(json["name"], "test");
+        assert!(json["adjacency_indices"].is_array());
+        assert!(json["adjacency_types"].is_array());
+        assert!(json["transformation"].is_array());
+        assert_eq!(json["transformation"][0], 1.0); // First element of identity matrix
+    }
+    
+    #[test]
+    fn test_adjacency() {
+        let mut data = Data::with_name("test");
+        let other_guid = Uuid::new_v4();
+        
+        // Add adjacency
+        data.add_adjacency(other_guid, "connected_to");
+        assert_eq!(data.adjacency_indices().len(), 1);
+        assert_eq!(data.adjacency_types().len(), 1);
+        assert_eq!(data.adjacency_indices()[0], other_guid);
+        assert_eq!(data.adjacency_types()[0], "connected_to");
+        
+        // Clear adjacencies
+        data.clear_adjacencies();
+        assert_eq!(data.adjacency_indices().len(), 0);
+        assert_eq!(data.adjacency_types().len(), 0);
+    }
+    
+    #[test]
+    fn test_parent() {
+        let mut data = Data::with_name("test");
+        let parent_guid = Uuid::new_v4();
+        
+        // Initially no parent
+        assert_eq!(data.parent(), None);
+        
+        // Set parent
+        data.set_parent(Some(parent_guid));
+        assert_eq!(data.parent(), Some(parent_guid));
+        
+        // Clear parent
+        data.set_parent(None);
+        assert_eq!(data.parent(), None);
+    }
+    
+    #[test]
+    fn test_transformation() {
+        let mut data = Data::with_name("test");
+        
+        // Default should be identity matrix
+        let identity = [
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        ];
+        assert_eq!(data.transformation(), &identity);
+        
+        // Set custom transformation
+        let custom_transform = [
+            2.0, 0.0, 0.0, 0.0,
+            0.0, 2.0, 0.0, 0.0,
+            0.0, 0.0, 2.0, 0.0,
+            1.0, 2.0, 3.0, 1.0,
+        ];
+        data.set_transformation(custom_transform);
+        assert_eq!(data.transformation(), &custom_transform);
+        
+        // Reset to identity
+        data.reset_transformation();
+        assert_eq!(data.transformation(), &identity);
     }
 }
