@@ -1,15 +1,11 @@
-use crate::geometry::Point;
-use crate::geometry::Vector;
-use crate::geometry::Color;
-use crate::geometry::Xform;
-use crate::common::{JsonSerializable, FromJsonData};
+use crate::geometry::{Point, Vector, Color, Xform};
+use crate::common::{JsonSerializable, FromJsonData, Data};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
-use crate::common::Data;
 use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Cloud {
+pub struct PointCloud {
     /// The collection of points.
     pub points: Vec<Point>,
 
@@ -26,8 +22,8 @@ pub struct Cloud {
     pub data: Data,
 }
 
-impl Cloud {
-    /// Creates a new `Cloud` with default `Data`.
+impl PointCloud {
+    /// Creates a new `PointCloud` with default `Data`.
     ///
     /// # Arguments
     ///
@@ -42,11 +38,11 @@ impl Cloud {
     /// use openmodel::geometry::Point;
     /// use openmodel::geometry::Vector;
     /// use openmodel::geometry::Color;
-    /// use openmodel::geometry::Cloud;
+    /// use openmodel::geometry::PointCloud;
     /// let points = vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0)];
     /// let normals = vec![Vector::new(0.0, 0.0, 1.0), Vector::new(0.0, 1.0, 0.0), Vector::new(1.0, 0.0, 0.0)];
     /// let colors = vec![Color::new(255, 0, 0, 0), Color::new(0, 255, 0, 0), Color::new(0, 0, 255, 0)];
-    /// let cloud = Cloud::new(points, normals, colors);
+    /// let cloud = PointCloud::new(points, normals, colors);
     /// ```
     ///
     /// # Panics
@@ -61,11 +57,10 @@ impl Cloud {
             data: Data::default(),
         }
     }
-
 }
 
 
-impl AddAssign<&Vector> for Cloud {
+impl AddAssign<&Vector> for PointCloud {
     /// Adds the coordinates of another point to this point.
     ///
     /// # Arguments
@@ -75,8 +70,8 @@ impl AddAssign<&Vector> for Cloud {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
-    /// let mut c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// use openmodel::geometry::{PointCloud, Point, Vector, Color};
+    /// let mut c = PointCloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
     /// let v = Vector::new(4.0, 5.0, 6.0);
     /// c += &v;
     /// assert_eq!(c.points[0].x, 5.0);
@@ -92,8 +87,8 @@ impl AddAssign<&Vector> for Cloud {
     }
 }
 
-impl Add<&Vector> for Cloud {
-    type Output = Cloud;
+impl Add<&Vector> for PointCloud {
+    type Output = PointCloud;
 
     /// Adds the coordinates of a vector to this point and returns a new point.
     ///
@@ -104,15 +99,15 @@ impl Add<&Vector> for Cloud {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
-    /// let c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// use openmodel::geometry::{PointCloud, Point, Vector, Color};
+    /// let c = PointCloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
     /// let v = Vector::new(4.0, 5.0, 6.0);
     /// let c2 = c + &v;
     /// assert_eq!(c2.points[0].x, 5.0);
     /// assert_eq!(c2.points[0].y, 7.0);
     /// assert_eq!(c2.points[0].z, 9.0);
     /// ```
-    fn add(self, other: &Vector) -> Cloud {
+    fn add(self, other: &Vector) -> PointCloud {
         let mut c = self.clone();
         for p in &mut c.points {
             p.x += other.x;
@@ -125,7 +120,7 @@ impl Add<&Vector> for Cloud {
 
 
 
-impl SubAssign <&Vector> for Cloud {
+impl SubAssign <&Vector> for PointCloud {
     /// Adds the coordinates of another point to this point.
     ///
     /// # Arguments
@@ -135,8 +130,8 @@ impl SubAssign <&Vector> for Cloud {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
-    /// let mut c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// use openmodel::geometry::{PointCloud, Point, Vector, Color};
+    /// let mut c = PointCloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
     /// let v = Vector::new(4.0, 5.0, 6.0);
     /// c -= &v;
     /// assert_eq!(c.points[0].x, -3.0);
@@ -152,8 +147,8 @@ impl SubAssign <&Vector> for Cloud {
     }
 }
 
-impl Sub<&Vector> for Cloud {
-    type Output = Cloud;
+impl Sub<&Vector> for PointCloud {
+    type Output = PointCloud;
 
     /// Adds the coordinates of a vector to this point and returns a new point.
     ///
@@ -164,15 +159,15 @@ impl Sub<&Vector> for Cloud {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Cloud, Point, Vector, Color};
-    /// let c = Cloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
+    /// use openmodel::geometry::{PointCloud, Point, Vector, Color};
+    /// let c = PointCloud::new(vec![Point::new(1.0, 2.0, 3.0)], vec![Vector::new(0.0, 0.0, 1.0)], vec![Color::new(255, 0, 0, 0)]);
     /// let v = Vector::new(4.0, 5.0, 6.0);
     /// let c2 = c - &v;
     /// assert_eq!(c2.points[0].x, -3.0);
     /// assert_eq!(c2.points[0].y, -3.0);
     /// assert_eq!(c2.points[0].z, -3.0);
     /// ```
-    fn sub(self, other: &Vector) -> Cloud {
+    fn sub(self, other: &Vector) -> PointCloud {
         let mut c = self.clone();
         for p in &mut c.points {
             p.x -= other.x;
@@ -183,11 +178,11 @@ impl Sub<&Vector> for Cloud {
     }
 }
 
-impl fmt::Display for Cloud {
+impl fmt::Display for PointCloud {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Cloud {{ points: {}, normals: {}, colors: {}, data: {} }}",
+            "PointCloud {{ points: {}, normals: {}, colors: {}, data: {} }}",
             self.points.len(),
             self.normals.len(),
             self.colors.len(),
@@ -197,13 +192,13 @@ impl fmt::Display for Cloud {
 }
 
 // JSON serialization support
-impl JsonSerializable for Cloud {
+impl JsonSerializable for PointCloud {
     fn to_json_value(&self) -> serde_json::Value {
         serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
     }
 }
 
-impl FromJsonData for Cloud {
+impl FromJsonData for PointCloud {
     fn from_json_data(data: &serde_json::Value) -> Option<Self> {
         serde_json::from_value(data.clone()).ok()
     }

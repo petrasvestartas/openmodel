@@ -9,7 +9,8 @@ fn test_data_creation() {
 }
 
 #[test]
-#[should_panic(expected = "Name is too long")]
 fn test_data_creation_with_long_name() {
-    let _data = Data::with_name("ThisNameIsWayTooLongForTheFixedSizeArray");
+    // With String implementation, names can be any length
+    let data = Data::with_name("ThisNameIsWayTooLongForTheFixedSizeArrayButNowItsOkayBecauseWeUseString");
+    assert_eq!(data.name(), "ThisNameIsWayTooLongForTheFixedSizeArrayButNowItsOkayBecauseWeUseString");
 }

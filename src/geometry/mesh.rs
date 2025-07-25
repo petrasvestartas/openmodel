@@ -3,6 +3,7 @@ use crate::common::Data;
 use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::f64::consts::PI;
 use uuid::Uuid;
 
 /// Weighting scheme for vertex normal computation
@@ -412,6 +413,32 @@ impl Mesh {
     pub fn face_vertices(&self, face_key: usize) -> Option<&Vec<usize>> {
         self.face.get(&face_key)
     }
+    
+    /// Get all face data as an iterator over (face_key, face_vertices) pairs.
+    /// 
+    /// This method provides access to all faces in the mesh for iteration.
+    /// Useful for converting to other mesh representations.
+    /// 
+    /// # Returns
+    /// An iterator over (face_key, face_vertices) pairs
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// 
+    /// for (face_key, face_vertices) in mesh.get_face_data() {
+    ///     println!("Face {}: {:?}", face_key, face_vertices);
+    /// }
+    /// ```
+    pub fn get_face_data(&self) -> impl Iterator<Item = (&usize, &Vec<usize>)> {
+        self.face.iter()
+    }
 
     /// Check if a vertex is on the boundary of the mesh.
     /// 
@@ -820,6 +847,126 @@ impl Mesh {
     pub fn vertex_normals(&self) -> HashMap<usize, Vector> {
         self.vertex_normals_weighted(NormalWeighting::Area)
     }
+    
+    /// Create a pipe mesh from a line segment.
+    /// 
+    /// Creates a cylindrical mesh along a line segment defined by two points.
+    /// The pipe has circular cross-sections perpendicular to the line direction.
+    /// 
+    /// # Arguments
+    /// * `start` - Starting point of the line
+    /// * `end` - Ending point of the line
+    /// * `radius` - Radius of the pipe
+    /// * `sides` - Number of sides for the cylindrical approximation
+    /// 
+    /// # Returns
+    /// A new Mesh representing a pipe along the specified line
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let start = Point::new(0.0, 0.0, 0.0);
+    /// let end = Point::new(0.0, 0.0, 1.0);
+    /// let radius = 0.2;
+    /// let sides = 12;
+    /// let pipe_mesh = Mesh::create_pipe(start, end, radius, sides);
+    /// ```
+    pub fn create_pipe(start: Point, end: Point, radius: f64, sides: usize) -> Self {
+        let mut mesh = Mesh::new();
+        
+        // Direction vector from start to end
+        let direction = Vector::new(end.x - start.x, end.y - start.y, end.z - start.z);
+        
+        // Skip if the pipe has zero length
+        if direction.length() < 1e-6 {
+            return mesh;
+        }
+        
+        // Create an orthonormal basis for the cylinder
+        let axis = direction.normalize();
+        
+        // Find perpendicular vectors for the cylinder cross section
+        // Using a straightforward and stable approach to pick the perpendicular vector
+        let perpendicular = if axis.z.abs() < 0.9 {
+            // If not nearly parallel with Z, use Z-axis for cross product
+            Vector::new(0.0, 0.0, 1.0).cross(&axis).normalize()
+        } else {
+            // Otherwise use X-axis for cross product
+            Vector::new(1.0, 0.0, 0.0).cross(&axis).normalize()
+        };
+        
+        // Now get the third basis vector with another cross product
+        let binormal = axis.cross(&perpendicular).normalize();
+        
+        // Add bottom cap center vertex
+        let bottom_center = mesh.add_vertex(start.clone(), None);
+        
+        // Add bottom cap rim vertices
+        let mut bottom_rim = Vec::with_capacity(sides);
+        for i in 0..sides {
+            let angle = i as f64 * 2.0 * PI / sides as f64;
+            let x = angle.cos();
+            let y = angle.sin();
+            
+            let point = Point::new(
+                start.x + radius * (x * perpendicular.x + y * binormal.x),
+                start.y + radius * (x * perpendicular.y + y * binormal.y),
+                start.z + radius * (x * perpendicular.z + y * binormal.z)
+            );
+            
+            bottom_rim.push(mesh.add_vertex(point, None));
+        }
+        
+        // Add top cap center vertex
+        let top_center = mesh.add_vertex(end.clone(), None);
+        
+        // Add top cap rim vertices
+        let mut top_rim = Vec::with_capacity(sides);
+        for i in 0..sides {
+            let angle = i as f64 * 2.0 * PI / sides as f64;
+            let x = angle.cos();
+            let y = angle.sin();
+            
+            let point = Point::new(
+                end.x + radius * (x * perpendicular.x + y * binormal.x),
+                end.y + radius * (x * perpendicular.y + y * binormal.y),
+                end.z + radius * (x * perpendicular.z + y * binormal.z)
+            );
+            
+            top_rim.push(mesh.add_vertex(point, None));
+        }
+        
+        // Create bottom cap triangular faces
+        for i in 0..sides {
+            let v1 = bottom_rim[i];
+            let v2 = bottom_rim[(i + 1) % sides];
+            mesh.add_face(vec![bottom_center, v2, v1], None);
+        }
+        
+        // Create top cap triangular faces
+        for i in 0..sides {
+            let v1 = top_rim[i];
+            let v2 = top_rim[(i + 1) % sides];
+            mesh.add_face(vec![top_center, v1, v2], None);
+        }
+        
+        // Create side quadrilateral faces (two triangles per side)
+        for i in 0..sides {
+            let bottom_curr = bottom_rim[i];
+            let bottom_next = bottom_rim[(i + 1) % sides];
+            let top_curr = top_rim[i];
+            let top_next = top_rim[(i + 1) % sides];
+            
+            // First triangle of the quad
+            mesh.add_face(vec![bottom_curr, bottom_next, top_curr], None);
+            
+            // Second triangle of the quad
+            mesh.add_face(vec![top_curr, bottom_next, top_next], None);
+        }
+        
+        mesh
+    }
 
     /// Create a halfedge mesh from a list of polygons.
     /// 
@@ -888,6 +1035,504 @@ impl Mesh {
         
         mesh
     }
+    
+    /// Create a mesh from a polygon using ear clipping triangulation.
+    /// 
+    /// The polygon is assumed to be planar and non-self-intersecting.
+    /// Points should be provided in counter-clockwise order for correct triangulation.
+    /// 
+    /// # Arguments
+    /// * `polygon_points` - List of 3D points defining the polygon boundary
+    /// 
+    /// # Returns
+    /// A new halfedge mesh representing the triangulated polygon
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let square = vec![
+    ///     Point::new(0.0, 0.0, 0.0),
+    ///     Point::new(1.0, 0.0, 0.0),
+    ///     Point::new(1.0, 1.0, 0.0),
+    ///     Point::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let mesh = Mesh::from_polygon_earclip(square);
+    /// assert_eq!(mesh.number_of_vertices(), 4);
+    /// assert_eq!(mesh.number_of_faces(), 2); // Square triangulated into 2 triangles
+    /// ```
+    pub fn from_polygon_earclip(polygon_points: Vec<Point>) -> Self {
+        if polygon_points.len() < 3 {
+            return Self::new();
+        }
+        
+        // Convert 3D points to 2D for triangulation (assuming planar polygon)
+        let points_2d: Vec<[f64; 2]> = polygon_points.iter()
+            .map(|p| [p.x, p.y])
+            .collect();
+        
+        // Perform ear clipping triangulation
+        let triangles = match earclip_triangulate(&points_2d) {
+            Ok(tris) => tris,
+            Err(_) => return Self::new(), // Return empty mesh on error
+        };
+        
+        // Create mesh from triangulated result
+        let mut mesh = Self::new();
+        
+        // Add all vertices
+        let mut vertex_keys = Vec::new();
+        for point in polygon_points {
+            let key = mesh.add_vertex(point, None);
+            vertex_keys.push(key);
+        }
+        
+        // Add triangular faces
+        for triangle in triangles {
+            let face_vertices = vec![
+                vertex_keys[triangle[0]],
+                vertex_keys[triangle[1]], 
+                vertex_keys[triangle[2]]
+            ];
+            mesh.add_face(face_vertices, None);
+        }
+        
+        mesh
+    }
+    
+    /// Extract all unique edges from the mesh as Line objects.
+    /// 
+    /// This method traverses all faces and collects unique edges (no duplicates).
+    /// Each edge is represented as a Line connecting two vertices.
+    /// 
+    /// # Returns
+    /// A vector of Line objects representing the unique edges of the mesh
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// 
+    /// let edges = mesh.extract_edges_as_lines();
+    /// assert_eq!(edges.len(), 3); // Triangle has 3 edges
+    /// ```
+    pub fn extract_edges_as_lines(&self) -> Vec<crate::geometry::Line> {
+        use std::collections::HashSet;
+        use crate::geometry::Line;
+        
+        let mut unique_edges = HashSet::new();
+        let mut lines = Vec::new();
+        
+        // Iterate through all faces to collect edges
+        for face_vertices in self.face.values() {
+            let n = face_vertices.len();
+            for i in 0..n {
+                let v1 = face_vertices[i];
+                let v2 = face_vertices[(i + 1) % n];
+                
+                // Create a normalized edge (smaller vertex index first) to avoid duplicates
+                let edge = if v1 < v2 { (v1, v2) } else { (v2, v1) };
+                
+                if unique_edges.insert(edge) {
+                    // Get vertex positions
+                    if let (Some(pos1), Some(pos2)) = (
+                        self.vertex_position(v1),
+                        self.vertex_position(v2)
+                    ) {
+                        let line = Line::new(
+                            pos1.x, pos1.y, pos1.z,
+                            pos2.x, pos2.y, pos2.z
+                        );
+                        lines.push(line);
+                    }
+                }
+            }
+        }
+        
+        lines
+    }
+    
+    /// Extract all unique edges from the mesh as pipe meshes (cylinders).
+    /// 
+    /// This method creates cylindrical pipe meshes for each unique edge in the mesh.
+    /// The pipes use the specified radius and number of sides for the cross-section.
+    /// 
+    /// # Arguments
+    /// * `radius` - Radius of the pipe cylinders
+    /// * `sides` - Number of sides for the cylindrical cross-section (default: 8)
+    /// 
+    /// # Returns
+    /// A vector of Mesh objects representing the pipe meshes for each edge
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// let mut mesh = Mesh::new();
+    /// let v0 = mesh.add_vertex(Point::new(0.0, 0.0, 0.0), None);
+    /// let v1 = mesh.add_vertex(Point::new(1.0, 0.0, 0.0), None);
+    /// let v2 = mesh.add_vertex(Point::new(0.0, 1.0, 0.0), None);
+    /// mesh.add_face(vec![v0, v1, v2], None);
+    /// 
+    /// let pipe_meshes = mesh.extract_edges_as_pipes(0.05, Some(8));
+    /// assert_eq!(pipe_meshes.len(), 3); // Triangle has 3 edges
+    /// ```
+    pub fn extract_edges_as_pipes(&self, radius: f64, sides: Option<usize>) -> Vec<Mesh> {
+        use std::collections::HashSet;
+        
+        let sides = sides.unwrap_or(8); // Default to 8 sides
+        let mut unique_edges = HashSet::new();
+        let mut pipe_meshes = Vec::new();
+        
+        // Iterate through all faces to collect edges
+        for face_vertices in self.face.values() {
+            let n = face_vertices.len();
+            for i in 0..n {
+                let v1 = face_vertices[i];
+                let v2 = face_vertices[(i + 1) % n];
+                
+                // Create a normalized edge (smaller vertex index first) to avoid duplicates
+                let edge = if v1 < v2 { (v1, v2) } else { (v2, v1) };
+                
+                if unique_edges.insert(edge) {
+                    // Get vertex positions
+                    if let (Some(pos1), Some(pos2)) = (
+                        self.vertex_position(v1),
+                        self.vertex_position(v2)
+                    ) {
+                        // Create pipe mesh for this edge
+                        let pipe_mesh = Mesh::create_pipe(pos1, pos2, radius, sides);
+                        pipe_meshes.push(pipe_mesh);
+                    }
+                }
+            }
+        }
+        
+        pipe_meshes
+    }
+    
+    /// Create a mesh from a list of polygons with automatic duplicate point removal.
+    /// 
+    /// This method takes a list of polygons (each defined by a list of 3D points) and
+    /// creates a unified mesh by merging duplicate vertices based on coordinate precision.
+    /// Polygons with 4 or more vertices are automatically triangulated using ear clipping.
+    /// 
+    /// # Arguments
+    /// * `polygons` - List of polygons, each defined by a list of 3D points
+    /// * `precision` - Precision for merging vertices (default: 1e-10)
+    /// 
+    /// # Returns
+    /// A new halfedge mesh constructed from the polygons with merged vertices
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Mesh, Point};
+    /// 
+    /// // Create a cube using quad faces
+    /// let cube_faces = vec![
+    ///     // Front face
+    ///     vec![
+    ///         Point::new(0.0, 0.0, 0.0),
+    ///         Point::new(1.0, 0.0, 0.0),
+    ///         Point::new(1.0, 1.0, 0.0),
+    ///         Point::new(0.0, 1.0, 0.0),
+    ///     ],
+    ///     // Back face
+    ///     vec![
+    ///         Point::new(1.0, 0.0, 1.0),
+    ///         Point::new(0.0, 0.0, 1.0),
+    ///         Point::new(0.0, 1.0, 1.0),
+    ///         Point::new(1.0, 1.0, 1.0),
+    ///     ],
+    /// ];
+    /// 
+    /// let mesh = Mesh::from_polygons_with_merge(cube_faces, None);
+    /// assert_eq!(mesh.number_of_vertices(), 8); // Cube has 8 unique vertices
+    /// ```
+    pub fn from_polygons_with_merge(polygons: Vec<Vec<Point>>, precision: Option<f64>) -> Self {
+        use std::collections::HashMap;
+        
+        let precision = precision.unwrap_or(1e-10);
+        let mut mesh = Self::new();
+        
+        // Map to store unique vertices and their keys
+        let mut vertex_map: HashMap<String, usize> = HashMap::new();
+        let mut unique_vertices: Vec<Point> = Vec::new();
+        
+        // Helper function to create a key for a point based on precision
+        let point_key = |p: &Point| -> String {
+            let factor = 1.0 / precision;
+            let x = (p.x * factor).round() as i64;
+            let y = (p.y * factor).round() as i64;
+            let z = (p.z * factor).round() as i64;
+            format!("{},{},{}", x, y, z)
+        };
+        
+        // First pass: collect all unique vertices
+        for polygon in &polygons {
+            for point in polygon {
+                let key = point_key(point);
+                if !vertex_map.contains_key(&key) {
+                    let vertex_key = unique_vertices.len();
+                    vertex_map.insert(key, vertex_key);
+                    unique_vertices.push(point.clone());
+                }
+            }
+        }
+        
+        // Add all unique vertices to the mesh
+        let mut mesh_vertex_keys = Vec::new();
+        for vertex in unique_vertices {
+            let key = mesh.add_vertex(vertex, None);
+            mesh_vertex_keys.push(key);
+        }
+        
+        // Second pass: create faces using the merged vertices
+        for polygon in polygons {
+            if polygon.len() < 3 {
+                continue; // Skip degenerate polygons
+            }
+            
+            // Map polygon points to mesh vertex keys
+            let face_vertices: Vec<usize> = polygon.iter()
+                .map(|point| {
+                    let key = point_key(point);
+                    let vertex_index = vertex_map[&key];
+                    mesh_vertex_keys[vertex_index]
+                })
+                .collect();
+            
+            if polygon.len() == 3 {
+                // Triangle - add directly
+                mesh.add_face(face_vertices, None);
+            } else {
+                // Polygon with 4+ vertices - triangulate using ear clipping
+                // First, project the 3D polygon to 2D for triangulation
+                let points_2d = project_polygon_to_2d(&polygon);
+                
+                match earclip_triangulate(&points_2d) {
+                    Ok(triangles) => {
+                        for triangle in triangles {
+                            let triangle_vertices = vec![
+                                face_vertices[triangle[0]],
+                                face_vertices[triangle[1]],
+                                face_vertices[triangle[2]]
+                            ];
+                            mesh.add_face(triangle_vertices, None);
+                        }
+                    }
+                    Err(_) => {
+                        // If triangulation fails, use simple fan triangulation as fallback
+                        for i in 1..polygon.len() - 1 {
+                            let triangle_vertices = vec![
+                                face_vertices[0],
+                                face_vertices[i],
+                                face_vertices[i + 1]
+                            ];
+                            mesh.add_face(triangle_vertices, None);
+                        }
+                    }
+                }
+            }
+        }
+        
+        mesh
+    }
+}
+
+/// Project a 3D polygon to 2D for triangulation.
+/// 
+/// This function finds the best 2D projection plane for the polygon by calculating
+/// the polygon's normal vector and projecting to the plane with the largest component.
+fn project_polygon_to_2d(polygon: &[Point]) -> Vec<[f64; 2]> {
+    use crate::primitives::Vector;
+    
+    if polygon.len() < 3 {
+        return Vec::new();
+    }
+    
+    // Calculate polygon normal using Newell's method for robustness
+    let mut normal = Vector::new(0.0, 0.0, 0.0);
+    for i in 0..polygon.len() {
+        let current = &polygon[i];
+        let next = &polygon[(i + 1) % polygon.len()];
+        
+        normal.x += (current.y - next.y) * (current.z + next.z);
+        normal.y += (current.z - next.z) * (current.x + next.x);
+        normal.z += (current.x - next.x) * (current.y + next.y);
+    }
+    
+    // Normalize the normal vector
+    let length = (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
+    if length > 1e-10 {
+        normal.x /= length;
+        normal.y /= length;
+        normal.z /= length;
+    } else {
+        // Degenerate polygon, use XY plane
+        normal = Vector::new(0.0, 0.0, 1.0);
+    }
+    
+    // Choose the projection plane based on the largest component of the normal
+    let abs_x = normal.x.abs();
+    let abs_y = normal.y.abs();
+    let abs_z = normal.z.abs();
+    
+    let points_2d: Vec<[f64; 2]> = if abs_z >= abs_x && abs_z >= abs_y {
+        // Project to XY plane (drop Z)
+        polygon.iter().map(|p| [p.x, p.y]).collect()
+    } else if abs_y >= abs_x && abs_y >= abs_z {
+        // Project to XZ plane (drop Y)
+        polygon.iter().map(|p| [p.x, p.z]).collect()
+    } else {
+        // Project to YZ plane (drop X)
+        polygon.iter().map(|p| [p.y, p.z]).collect()
+    };
+    
+    points_2d
+}
+
+// Ear clipping triangulation implementation
+// Based on COMPAS reference: https://github.com/compas-dev/compas/blob/main/src/compas/geometry/triangulation_earclip.py
+
+/// Triangulate a polygon using the ear clipping algorithm
+/// 
+/// # Arguments
+/// * `points` - Array of 2D points defining the polygon boundary
+/// 
+/// # Returns
+/// Result containing triangles as arrays of vertex indices, or error message
+fn earclip_triangulate(points: &[[f64; 2]]) -> Result<Vec<[usize; 3]>, &'static str> {
+    if points.len() < 3 {
+        return Err("Polygon must have at least 3 vertices");
+    }
+    
+    if points.len() == 3 {
+        return Ok(vec![[0, 1, 2]]);
+    }
+    
+    // Check winding order and reverse if clockwise
+    let mut polygon_points = points.to_vec();
+    let signed_area = compute_signed_area(&polygon_points);
+    let was_reversed = signed_area > 0.0; // Note: > 0 means clockwise in our coordinate system
+    
+    if was_reversed {
+        polygon_points.reverse();
+    }
+    
+    // Simple ear clipping implementation
+    let mut triangles = Vec::new();
+    let mut indices: Vec<usize> = (0..polygon_points.len()).collect();
+    
+    while indices.len() > 3 {
+        let mut ear_found = false;
+        
+        for i in 0..indices.len() {
+            let prev_idx = if i == 0 { indices.len() - 1 } else { i - 1 };
+            let next_idx = (i + 1) % indices.len();
+            
+            let prev = indices[prev_idx];
+            let curr = indices[i];
+            let next = indices[next_idx];
+            
+            // Check if this forms a valid ear
+            if is_ear(&polygon_points, &indices, prev, curr, next) {
+                // Add triangle
+                triangles.push([prev, curr, next]);
+                
+                // Remove the ear vertex
+                indices.remove(i);
+                ear_found = true;
+                break;
+            }
+        }
+        
+        if !ear_found {
+            return Err("Unable to find valid ear for triangulation");
+        }
+    }
+    
+    // Add the final triangle
+    if indices.len() == 3 {
+        triangles.push([indices[0], indices[1], indices[2]]);
+    }
+    
+    // If we reversed the points, adjust triangle indices back
+    if was_reversed {
+        let n = points.len();
+        for triangle in &mut triangles {
+            triangle[0] = n - 1 - triangle[0];
+            triangle[1] = n - 1 - triangle[1];
+            triangle[2] = n - 1 - triangle[2];
+        }
+    }
+    
+    Ok(triangles)
+}
+
+/// Check if three consecutive vertices form a valid ear
+fn is_ear(points: &[[f64; 2]], indices: &[usize], prev: usize, curr: usize, next: usize) -> bool {
+    let a = points[prev];
+    let b = points[curr];
+    let c = points[next];
+    
+    // Check if the angle at curr is convex (less than 180 degrees)
+    let ab = [b[0] - a[0], b[1] - a[1]];
+    let bc = [c[0] - b[0], c[1] - b[1]];
+    let cross = ab[0] * bc[1] - ab[1] * bc[0];
+    
+    if cross <= 0.0 {
+        return false; // Not convex
+    }
+    
+    // Check if any other vertex lies inside the triangle
+    for &idx in indices {
+        if idx != prev && idx != curr && idx != next {
+            if point_in_triangle(points[idx], a, b, c) {
+                return false;
+            }
+        }
+    }
+    
+    true
+}
+
+/// Check if a point is inside a triangle using barycentric coordinates
+fn point_in_triangle(p: [f64; 2], a: [f64; 2], b: [f64; 2], c: [f64; 2]) -> bool {
+    let d1 = sign(p, a, b);
+    let d2 = sign(p, b, c);
+    let d3 = sign(p, c, a);
+    
+    let has_neg = (d1 < 0.0) || (d2 < 0.0) || (d3 < 0.0);
+    let has_pos = (d1 > 0.0) || (d2 > 0.0) || (d3 > 0.0);
+    
+    !(has_neg && has_pos)
+}
+
+/// Helper function for point-in-triangle test
+fn sign(p1: [f64; 2], p2: [f64; 2], p3: [f64; 2]) -> f64 {
+    (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+}
+
+/// Compute the signed area of a 2D polygon
+/// Positive area indicates counter-clockwise winding, negative indicates clockwise
+fn compute_signed_area(points: &[[f64; 2]]) -> f64 {
+    let mut sum = 0.0;
+    let n = points.len();
+    
+    for i in 0..n {
+        let p0 = points[i];
+        let p1 = points[(i + 1) % n];
+        sum += (p1[0] - p0[0]) * (p1[1] + p0[1]);
+    }
+    
+    sum * 0.5
 }
 
 #[cfg(test)]

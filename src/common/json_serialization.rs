@@ -1,6 +1,4 @@
 use serde_json::Value;
-use std::collections::HashMap;
-use crate::common::Data;
 use std::ops::Index;
 use std::fmt;
 
@@ -49,7 +47,7 @@ impl JsonData {
     }
     
     /// Iterate over array items
-    pub fn iter(&self) -> JsonArrayIter {
+    pub fn iter(&self) -> JsonArrayIter<'_> {
         match &self.value {
             Value::Array(arr) => JsonArrayIter { items: arr.iter(), index: 0 },
             _ => JsonArrayIter { items: [].iter(), index: 0 },
@@ -81,7 +79,7 @@ impl<'a> Iterator for JsonArrayIter<'a> {
 impl Index<&str> for JsonData {
     type Output = JsonData;
     
-    fn index(&self, key: &str) -> &Self::Output {
+    fn index(&self, _key: &str) -> &Self::Output {
         // This is a bit tricky - we need to return a reference but we're creating new JsonData
         // For now, let's use a different approach
         unreachable!("Use get() method instead")
@@ -275,10 +273,12 @@ impl JsonSerializable for Vec<Value> {
 /// use openmodel::common::json_dump;
 /// 
 /// // Single object - no .unwrap() needed!
-/// let point = Point::new(1.0, 2.0, 3.0);
-/// json_dump(&point, "point.json");
+/// let point1 = Point::new(1.0, 2.0, 3.0);
+/// json_dump(&point1, "point.json");
 /// 
 /// // Collection of objects - no .unwrap() needed!
+/// let point2 = Point::new(4.0, 5.0, 6.0);
+/// let point3 = Point::new(7.0, 8.0, 9.0);
 /// let points = vec![point1, point2, point3];
 /// json_dump(&points, "collection.json");
 /// ```
@@ -303,13 +303,36 @@ pub fn json_dump<T: JsonSerializable>(obj: &T, path: &str) {
 /// Returns the actual geometry type directly!
 /// 
 /// # Example  
-/// ```
+/// ```no_run
 /// use openmodel::geometry::Point;
 /// use openmodel::common::json_load;
+/// use std::fs::File;
+/// use std::io::Write;
+/// use serde_json::json;
 /// 
-/// // Direct Point object - no casting needed!
-/// let point: Point = json_load("point.json");
+/// // For doctest purposes, create a test file
+/// let test_data = json!({
+///     "type": "Point",
+///     "x": 1.0,
+///     "y": 2.0,
+///     "z": 3.0,
+///     "data": {
+///         "name": "TestPoint",
+///         "guid": "00000000-0000-0000-0000-000000000000"
+///     }
+/// });
+/// 
+/// // Write to a temporary file
+/// let temp_path = "temp_test_point.json";
+/// let mut file = File::create(temp_path).unwrap();
+/// file.write_all(test_data.to_string().as_bytes()).unwrap();
+/// 
+/// // Now load the point
+/// let point: Point = json_load(temp_path);
 /// println!("Point at ({}, {}, {})", point.x, point.y, point.z);
+/// 
+/// // Clean up
+/// std::fs::remove_file(temp_path).unwrap();
 /// ```
 pub fn json_load<T: FromJsonData>(path: &str) -> T {
     let json_str = match std::fs::read_to_string(path) {

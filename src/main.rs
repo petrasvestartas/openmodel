@@ -1,4 +1,4 @@
-use openmodel::geometry::{Point, Vector, Line, Plane, Color, Cloud, Pline, Xform, Mesh};
+use openmodel::geometry::{Point, Vector, Line, Plane, Color, PointCloud, LineCloud, Pline, Xform, Mesh};
 use openmodel::common::{json_dump, json_load, JsonSerializable, FromJsonData};
 use serde::{Serialize, Deserialize};
 use serde_json;
@@ -11,7 +11,8 @@ struct AllGeometryData {
     lines: Vec<Line>,
     planes: Vec<Plane>,
     colors: Vec<Color>,
-    clouds: Vec<Cloud>,
+    point_clouds: Vec<PointCloud>,
+    line_clouds: Vec<LineCloud>,
     plines: Vec<Pline>,
     xforms: Vec<Xform>,
     meshes: Vec<Mesh>,
@@ -63,11 +64,18 @@ fn main() {
         Color::new(0, 0, 255, 255),
     ];
     
-    let clouds = vec![
-        Cloud::new(
+    let point_clouds = vec![
+        PointCloud::new(
             vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0)],
             vec![Vector::new(0.0, 0.0, 1.0), Vector::new(0.0, 0.0, 1.0)],
             vec![Color::new(255, 0, 0, 255), Color::new(0, 255, 0, 255)],
+        ),
+    ];
+    
+    let line_clouds = vec![
+        LineCloud::new(
+            vec![Line::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)],
+            vec![Color::new(255, 0, 0, 255)],
         ),
     ];
     
@@ -93,7 +101,8 @@ fn main() {
         lines: lines.clone(),
         planes: planes.clone(),
         colors: colors.clone(),
-        clouds: clouds.clone(),
+        point_clouds: point_clouds.clone(),
+        line_clouds: line_clouds.clone(),
         plines: plines.clone(),
         xforms: xforms.clone(),
         meshes: meshes.clone(),
@@ -105,7 +114,8 @@ fn main() {
     println!("   {} Lines", all_geometry.lines.len());
     println!("   {} Planes", all_geometry.planes.len());
     println!("   {} Colors", all_geometry.colors.len());
-    println!("   {} Clouds", all_geometry.clouds.len());
+    println!("   {} Point Clouds", all_geometry.point_clouds.len());
+    println!("   {} Line Clouds", all_geometry.line_clouds.len());
     println!("   {} Plines", all_geometry.plines.len());
     println!("   {} Xforms", all_geometry.xforms.len());
     println!("   {} Meshes", all_geometry.meshes.len());
@@ -122,7 +132,8 @@ fn main() {
     println!("   {} Lines", loaded_geometry.lines.len());
     println!("   {} Planes", loaded_geometry.planes.len());
     println!("   {} Colors", loaded_geometry.colors.len());
-    println!("   {} Clouds", loaded_geometry.clouds.len());
+    println!("   {} Point Clouds", loaded_geometry.point_clouds.len());
+    println!("   {} Line Clouds", loaded_geometry.line_clouds.len());
     println!("   {} Plines", loaded_geometry.plines.len());
     println!("   {} Xforms", loaded_geometry.xforms.len());
     println!("   {} Meshes", loaded_geometry.meshes.len());
@@ -133,7 +144,8 @@ fn main() {
     println!("First Vector: {}", loaded_geometry.vectors[0]);
     println!("First Line: {}", loaded_geometry.lines[0]);
     println!("First Color: {}", loaded_geometry.colors[0]);
-    println!("First Cloud: {} points", loaded_geometry.clouds[0].points.len());
+    println!("First Point Cloud: {} points", loaded_geometry.point_clouds[0].points.len());
+    println!("First Line Cloud: {} lines", loaded_geometry.line_clouds[0].lines.len());
     println!("First Pline: {} points", loaded_geometry.plines[0].points.len());
     println!("First Mesh: {} vertices, {} faces", 
              loaded_geometry.meshes[0].number_of_vertices(), 

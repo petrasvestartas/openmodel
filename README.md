@@ -1,7 +1,7 @@
 
 # Rust
 
-
+TODO: ear clipping algorithm
 
 ## Installation 
 

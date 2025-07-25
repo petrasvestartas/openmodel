@@ -648,10 +648,8 @@ impl FromJsonData for Point {
         
         let mut point = Point::new(x, y, z);
         
-        // Set name if available
-        if let Some(name) = data["name"].as_str() {
-            point.data.set_name(name);
-        }
+        // Apply all data fields from JSON
+        point.data.apply_from_json(data);
         
         Some(point)
     }

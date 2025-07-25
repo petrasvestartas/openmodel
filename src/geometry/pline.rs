@@ -1,6 +1,7 @@
 use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::geometry::Plane;
+use crate::geometry::Mesh;
 use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -46,6 +47,71 @@ impl Pline {
             plane,
             data: Data::default(),
         }
+    }
+    
+    /// Convert polyline segments to pipe meshes for visualization.
+    /// Each segment between consecutive points becomes a cylindrical pipe mesh.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `radius` - The radius of the pipe meshes (uses data.thickness if None)
+    /// * `sides` - Number of sides for the cylindrical pipes (default: 8)
+    /// 
+    /// # Returns
+    /// 
+    /// A vector of `Mesh` objects, one for each segment in the polyline.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::{Point, Pline};
+    /// let points = vec![
+    ///     Point::new(0.0, 0.0, 0.0),
+    ///     Point::new(1.0, 0.0, 0.0),
+    ///     Point::new(1.0, 1.0, 0.0)
+    /// ];
+    /// let pline = Pline::new(points);
+    /// let pipe_meshes = pline.to_pipe_meshes(Some(0.1), None);
+    /// assert_eq!(pipe_meshes.len(), 2); // Two segments
+    /// ```
+    pub fn to_pipe_meshes(&self, radius: Option<f64>, sides: Option<usize>) -> Vec<Mesh> {
+        let mut meshes = Vec::new();
+        
+        // Need at least 2 points to create segments
+        if self.points.len() < 2 {
+            return meshes;
+        }
+        
+        // Use provided radius or fall back to data thickness, or default to 0.05
+        let pipe_radius = radius.unwrap_or_else(|| {
+            let thickness = self.data.get_thickness();
+            if thickness > 0.0 { thickness } else { 0.05 }
+        });
+        let pipe_sides = sides.unwrap_or(8);
+        
+        // Create a pipe mesh for each segment
+        for i in 0..self.points.len() - 1 {
+            let start_point = &self.points[i];
+            let end_point = &self.points[i + 1];
+            
+            // Create pipe mesh for this segment
+            let mut pipe_mesh = Mesh::create_pipe(
+                start_point.clone(),
+                end_point.clone(),
+                pipe_radius,
+                pipe_sides
+            );
+            
+            // Apply color from data if available
+            let color = self.data.get_color();
+            if color != [0, 0, 0] { // Only apply if not default black
+                pipe_mesh.data.set_color(color);
+            }
+            
+            meshes.push(pipe_mesh);
+        }
+        
+        meshes
     }
 }
 

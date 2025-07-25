@@ -1,10 +1,11 @@
-use crate::geometry::Point;
+use crate::geometry::{Point, Mesh};
 use crate::geometry::Vector;
 use crate::common::Data;
 use crate::common::{JsonSerializable, FromJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 use std::fmt;
+// use std::f64::consts::PI;  // Not needed
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Line {
@@ -20,8 +21,11 @@ pub struct Line {
     pub y1: f64,
     /// The z coordinate of the end point.
     pub z1: f64,
-    /// The data associated with the point.
+    /// The data associated with the line (includes color and thickness).
     pub data: Data,
+    /// Mesh for visualization (pipe)
+    #[serde(skip)]
+    pub mesh: Option<Mesh>,
 }
 
 impl Line{
@@ -57,7 +61,8 @@ impl Line{
             x1,
             y1,
             z1,
-            data: Data::with_name("Line")
+            data: Data::with_name("Line"),
+            mesh: None,
         }
     }
 
@@ -94,6 +99,7 @@ impl Line{
             y1,
             z1,
             data: Data::with_name(&name),
+            mesh: None,
         }
     }
 
@@ -126,7 +132,8 @@ impl Line{
             x1:p1.x,
             y1:p1.y,
             z1:p1.z,
-            data: Data::with_name("Line")
+            data: Data::with_name("Line"),
+            mesh: None,
         }
     }
 
@@ -144,6 +151,57 @@ impl Line{
     pub fn length(&self) -> f64 {
         ((self.x0 - self.x1).powi(2) + (self.y0 - self.y1).powi(2) + (self.z0 - self.z1).powi(2))
             .sqrt()
+    }
+
+    /// Updates the mesh representation using thickness from data.
+    /// 
+    /// # Returns
+    /// A reference to self for method chaining.
+    pub fn update_mesh(&mut self) -> &mut Self {
+        // Get thickness from data
+        let thickness = self.data.get_thickness();
+        
+        // Create start and end points for the pipe
+        let start = Point::new(self.x0, self.y0, self.z0);
+        let end = Point::new(self.x1, self.y1, self.z1);
+        
+        // Use fixed 8 sides for the pipe cross-section
+        let sides = 8;
+        
+        // Generate the mesh
+        self.mesh = Some(Mesh::create_pipe(start, end, thickness, sides));
+        
+        // If the line has a color, apply it to the mesh
+        if self.data.has_color() {
+            if let Some(mesh) = &mut self.mesh {
+                mesh.data.set_color(self.data.get_color());
+            }
+        }
+        
+        self
+    }
+
+    /// Gets the mesh representation of this line as a pipe.
+    /// If the mesh doesn't exist, creates it first.
+    /// 
+    /// # Returns
+    /// An Option containing a reference to the Mesh if it exists.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use openmodel::geometry::Line;
+    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let mesh = line.get_mesh();
+    /// assert!(mesh.is_some());
+    /// ```
+    pub fn get_mesh(&mut self) -> Option<&Mesh> {
+        // Create the mesh if it doesn't exist yet
+        if self.mesh.is_none() {
+            self.update_mesh();
+        }
+        
+        self.mesh.as_ref()
     }
 }
 
@@ -165,6 +223,7 @@ impl Default for Line{
             y1: 0.0,
             z1: 1.0,
             data: Data::with_name("Line"),
+            mesh: None,
         }
     }
 }
@@ -201,6 +260,7 @@ impl Add<&Vector> for Line {
             y1: self.y1 + other.y,
             z1: self.z1 + other.z,
             data: Data::with_name("Line"),
+            mesh: None,
         }
     }
 }
@@ -468,6 +528,7 @@ impl Sub<&Vector> for Line {
             y1: self.y1 - vector.y,
             z1: self.z1 - vector.z,
             data: Data::with_name("Line"),
+            mesh: None,
         }
     }
 }
@@ -522,12 +583,11 @@ impl From<Line> for Vector {
     /// assert_eq!(v.z, 1.0);
     /// ```
     fn from(line: Line) -> Self {
-        Vector {
-            x: line.x1 - line.x0,
-            y: line.y1 - line.y0,
-            z: line.z1 - line.z0,
-            data: Data::with_name("Vector"),
-        }
+        Vector::new(
+            line.x1 - line.x0,
+            line.y1 - line.y0,
+            line.z1 - line.z0
+        )
     }
 }
 

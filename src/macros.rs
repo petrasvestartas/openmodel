@@ -55,9 +55,8 @@ macro_rules! point {
 /// # Examples
 /// 
 /// ```
-/// use openmodel::geometry::Vector;
+/// use openmodel::primitives::Vector;
 /// use openmodel::vector;
-/// use openmodel::common::Data;
 /// 
 /// // Default vector (zero vector)
 /// let v1 = vector![];
@@ -72,27 +71,20 @@ macro_rules! point {
 /// assert_eq!(v2.z, 3.0);
 /// 
 /// // Predefined axes
-/// let x_axis = vector![x_axis];
+/// let x_axis = vector![unit_x];
 /// assert_eq!(x_axis.x, 1.0);
 /// assert_eq!(x_axis.y, 0.0);
 /// assert_eq!(x_axis.z, 0.0);
 /// 
-/// let y_axis = vector![y_axis];
+/// let y_axis = vector![unit_y];
 /// assert_eq!(y_axis.x, 0.0);
 /// assert_eq!(y_axis.y, 1.0);
 /// assert_eq!(y_axis.z, 0.0);
 /// 
-/// let z_axis = vector![z_axis];
+/// let z_axis = vector![unit_z];
 /// assert_eq!(z_axis.x, 0.0);
 /// assert_eq!(z_axis.y, 0.0);
 /// assert_eq!(z_axis.z, 1.0);
-/// 
-/// // Vector with custom name
-/// let v3 = vector![4.0, 5.0, 6.0, name: "CustomVector"];
-/// assert_eq!(v3.x, 4.0);
-/// assert_eq!(v3.y, 5.0);
-/// assert_eq!(v3.z, 6.0);
-/// assert_eq!(v3.data.name(), "CustomVector");
 /// ```
 #[macro_export]
 macro_rules! vector {
@@ -107,25 +99,16 @@ macro_rules! vector {
     };
     
     // Predefined axes
-    (x_axis) => {
-        Vector::x_axis()
+    (unit_x) => {
+        Vector::unit_x()
     };
     
-    (y_axis) => {
-        Vector::y_axis()
+    (unit_y) => {
+        Vector::unit_y()
     };
     
-    (z_axis) => {
-        Vector::z_axis()
-    };
-    
-    // Pattern with custom name
-    ($x:expr, $y:expr, $z:expr, name: $name:expr) => {
-        {
-            let mut vec = Vector::new($x, $y, $z);
-            vec.data = Data::with_name($name);
-            vec
-        }
+    (unit_z) => {
+        Vector::unit_z()
     };
 }
 
@@ -279,9 +262,8 @@ macro_rules! plane {
 /// # Examples
 /// 
 /// ```
-/// use openmodel::geometry::Color;
+/// use openmodel::primitives::Color;
 /// use openmodel::color;
-/// use openmodel::common::Data;
 /// 
 /// // Default color (black)
 /// let c1 = color![];
@@ -322,14 +304,6 @@ macro_rules! plane {
 /// assert_eq!(blue.g, 0);
 /// assert_eq!(blue.b, 255);
 /// assert_eq!(blue.a, 255);
-/// 
-/// // With custom name
-/// let custom = color![255, 128, 64, 192, name: "CustomColor"];
-/// assert_eq!(custom.r, 255);
-/// assert_eq!(custom.g, 128);
-/// assert_eq!(custom.b, 64);
-/// assert_eq!(custom.a, 192);
-/// assert_eq!(custom.data.name(), "CustomColor");
 /// ```
 #[macro_export]
 macro_rules! color {
@@ -381,14 +355,7 @@ macro_rules! color {
         Color::new(255, 0, 255, 255)
     };
     
-    // With custom name
-    ($r:expr, $g:expr, $b:expr, $a:expr, name: $name:expr) => {
-        {
-            let mut clr = Color::new($r, $g, $b, $a);
-            clr.data = Data::with_name($name);
-            clr
-        }
-    };
+
 }
 
 /// Macro for creating an Xform with a more concise syntax
@@ -396,37 +363,36 @@ macro_rules! color {
 /// # Examples
 /// 
 /// ```
-/// use openmodel::geometry::Xform;
+/// use openmodel::primitives::Xform;
 /// use openmodel::xform;
-/// use openmodel::common::Data;
 /// 
 /// // Identity matrix
 /// let x1 = xform![];
-/// assert_eq!(x1.m00, 1.0);
-/// assert_eq!(x1.m11, 1.0);
-/// assert_eq!(x1.m22, 1.0);
-/// assert_eq!(x1.m33, 1.0);
-/// assert_eq!(x1.m01, 0.0);
+/// assert_eq!(x1[(0, 0)], 1.0); // m00
+/// assert_eq!(x1[(1, 1)], 1.0); // m11
+/// assert_eq!(x1[(2, 2)], 1.0); // m22
+/// assert_eq!(x1[(3, 3)], 1.0); // m33
+/// assert_eq!(x1[(0, 1)], 0.0); // m01
 /// 
 /// // Translation
 /// let x2 = xform![translation: 1.0, 2.0, 3.0];
-/// assert_eq!(x2.m03, 1.0); // tx
-/// assert_eq!(x2.m13, 2.0); // ty
-/// assert_eq!(x2.m23, 3.0); // tz
-/// assert_eq!(x2.m00, 1.0); // Identity part
+/// assert_eq!(x2[(0, 3)], 1.0); // tx
+/// assert_eq!(x2[(1, 3)], 2.0); // ty
+/// assert_eq!(x2[(2, 3)], 3.0); // tz
+/// assert_eq!(x2[(0, 0)], 1.0); // Identity part
 /// 
 /// // Scaling
 /// let x3 = xform![scaling: 2.0, 3.0, 4.0];
-/// assert_eq!(x3.m00, 2.0); // sx
-/// assert_eq!(x3.m11, 3.0); // sy
-/// assert_eq!(x3.m22, 4.0); // sz
+/// assert_eq!(x3[(0, 0)], 2.0); // sx
+/// assert_eq!(x3[(1, 1)], 3.0); // sy
+/// assert_eq!(x3[(2, 2)], 4.0); // sz
 /// 
 /// // Rotation around X (testing approximate values due to floating point)
 /// let x4 = xform![rotation_x: 90.0]; // 90 degrees
-/// assert!((x4.m11 - 0.0).abs() < 1e-10); // cos(90°)
-/// assert!((x4.m12 - (-1.0)).abs() < 1e-10); // -sin(90°)
-/// assert!((x4.m21 - 1.0).abs() < 1e-10); // sin(90°)
-/// assert!((x4.m22 - 0.0).abs() < 1e-10); // cos(90°)
+/// assert!((x4[(1, 1)] - 0.0).abs() < 1e-10); // cos(90°)
+/// assert!((x4[(1, 2)] - (-1.0)).abs() < 1e-10); // -sin(90°)
+/// assert!((x4[(2, 1)] - 1.0).abs() < 1e-10); // sin(90°)
+/// assert!((x4[(2, 2)] - 0.0).abs() < 1e-10); // cos(90°)
 /// 
 /// // Full matrix specification
 /// let x5 = xform![
@@ -435,29 +401,16 @@ macro_rules! color {
 ///     9.0, 10.0, 11.0, 12.0,
 ///     13.0, 14.0, 15.0, 16.0
 /// ];
-/// assert_eq!(x5.m00, 1.0);
-/// assert_eq!(x5.m01, 2.0);
-/// assert_eq!(x5.m13, 8.0);
-/// assert_eq!(x5.m33, 16.0);
-/// 
-/// // With custom name
-/// let x6 = xform![name: "MyTransform"];
-/// assert_eq!(x6.data.name(), "MyTransform");
+/// assert_eq!(x5[(0, 0)], 1.0); // m00
+/// assert_eq!(x5[(0, 1)], 5.0); // m01 (column-major: m at index 4)
+/// assert_eq!(x5[(1, 3)], 14.0); // m13 (column-major: m at index 13)
+/// assert_eq!(x5[(3, 3)], 16.0); // m33 (column-major: m at index 15)
 /// ```
 #[macro_export]
 macro_rules! xform {
     // Pattern for identity matrix
     () => {
-        Xform::new()
-    };
-    
-    // Pattern with custom name
-    (name: $name:expr) => {
-        {
-            let mut xf = Xform::new();
-            xf.data = Data::with_name($name);
-            xf
-        }
+        Xform::identity()
     };
     
     // Pattern for translation
@@ -477,13 +430,12 @@ macro_rules! xform {
             let s = angle_rad.sin();
             let c = angle_rad.cos();
             
-            Xform {
-                m00: 1.0, m01: 0.0, m02: 0.0, m03: 0.0,
-                m10: 0.0, m11: c,   m12: -s,  m13: 0.0,
-                m20: 0.0, m21: s,   m22: c,   m23: 0.0,
-                m30: 0.0, m31: 0.0, m32: 0.0, m33: 1.0,
-                data: Data::with_name("XRotation")
-            }
+            let mut xf = Xform::identity();
+            xf[(1, 1)] = c;
+            xf[(1, 2)] = -s;
+            xf[(2, 1)] = s;
+            xf[(2, 2)] = c;
+            xf
         }
     };
     
@@ -494,13 +446,12 @@ macro_rules! xform {
             let s = angle_rad.sin();
             let c = angle_rad.cos();
             
-            Xform {
-                m00: c,   m01: 0.0, m02: s,   m03: 0.0,
-                m10: 0.0, m11: 1.0, m12: 0.0, m13: 0.0,
-                m20: -s,  m21: 0.0, m22: c,   m23: 0.0,
-                m30: 0.0, m31: 0.0, m32: 0.0, m33: 1.0,
-                data: Data::with_name("YRotation")
-            }
+            let mut xf = Xform::identity();
+            xf[(0, 0)] = c;
+            xf[(0, 2)] = s;
+            xf[(2, 0)] = -s;
+            xf[(2, 2)] = c;
+            xf
         }
     };
     
@@ -511,13 +462,12 @@ macro_rules! xform {
             let s = angle_rad.sin();
             let c = angle_rad.cos();
             
-            Xform {
-                m00: c,   m01: -s,  m02: 0.0, m03: 0.0,
-                m10: s,   m11: c,   m12: 0.0, m13: 0.0,
-                m20: 0.0, m21: 0.0, m22: 1.0, m23: 0.0,
-                m30: 0.0, m31: 0.0, m32: 0.0, m33: 1.0,
-                data: Data::with_name("ZRotation")
-            }
+            let mut xf = Xform::identity();
+            xf[(0, 0)] = c;
+            xf[(0, 1)] = -s;
+            xf[(1, 0)] = s;
+            xf[(1, 1)] = c;
+            xf
         }
     };
     
@@ -526,12 +476,13 @@ macro_rules! xform {
      $m10:expr, $m11:expr, $m12:expr, $m13:expr,
      $m20:expr, $m21:expr, $m22:expr, $m23:expr,
      $m30:expr, $m31:expr, $m32:expr, $m33:expr) => {
-        Xform {
-            m00: $m00, m01: $m01, m02: $m02, m03: $m03,
-            m10: $m10, m11: $m11, m12: $m12, m13: $m13,
-            m20: $m20, m21: $m21, m22: $m22, m23: $m23,
-            m30: $m30, m31: $m31, m32: $m32, m33: $m33,
-            data: Data::with_name("CustomMatrix")
+        Xform { 
+            m: [
+                $m00, $m01, $m02, $m03,
+                $m10, $m11, $m12, $m13,
+                $m20, $m21, $m22, $m23,
+                $m30, $m31, $m32, $m33
+            ] 
         }
     };
 }
