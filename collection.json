@@ -8,7 +8,7 @@
       "z": 3.0
     },
     "dtype": "openmodel.geometry/Point",
-    "guid": "82e9565f-43f1-49e9-bccd-f4989e1bbcb7",
+    "guid": "d4f95044-d314-42b4-946c-2d8c6b311625",
     "name": "Point",
     "parent": null,
     "transformation": [
@@ -39,7 +39,7 @@
       "z": 6.0
     },
     "dtype": "openmodel.geometry/Point",
-    "guid": "19264164-a1a8-4dc6-880a-cc6d5418a25c",
+    "guid": "709bebcb-9c33-4ea5-82f3-062b3c7d3c3b",
     "name": "Point",
     "parent": null,
     "transformation": [
@@ -70,7 +70,7 @@
       "z": 9.0
     },
     "dtype": "openmodel.geometry/Point",
-    "guid": "bd0deb75-5e55-496b-a72a-169128f9041d",
+    "guid": "f6b28bce-333d-4ec7-86d6-a832f7bae8b1",
     "name": "Point",
     "parent": null,
     "transformation": [
