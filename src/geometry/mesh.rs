@@ -1,6 +1,7 @@
 use crate::geometry::{Point, Vector};
 use crate::common::Data;
 use crate::common::{JsonSerializable, FromJsonData};
+use crate::primitives::Xform;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::f64::consts::PI;
@@ -852,15 +853,16 @@ impl Mesh {
     /// 
     /// Creates a cylindrical mesh along a line segment defined by two points.
     /// The pipe has circular cross-sections perpendicular to the line direction.
+    /// This optimized version uses hardcoded coordinates for a 12-sided cylinder
+    /// and transforms them directly for maximum performance.
     /// 
     /// # Arguments
     /// * `start` - Starting point of the line
     /// * `end` - Ending point of the line
     /// * `radius` - Radius of the pipe
-    /// * `sides` - Number of sides for the cylindrical approximation
     /// 
     /// # Returns
-    /// A new Mesh representing a pipe along the specified line
+    /// A new Mesh representing a 12-sided pipe along the specified line
     /// 
     /// # Example
     /// 
@@ -869,104 +871,114 @@ impl Mesh {
     /// let start = Point::new(0.0, 0.0, 0.0);
     /// let end = Point::new(0.0, 0.0, 1.0);
     /// let radius = 0.2;
-    /// let sides = 12;
-    /// let pipe_mesh = Mesh::create_pipe(start, end, radius, sides);
+    /// let pipe_mesh = Mesh::create_pipe(start, end, radius);
     /// ```
-    pub fn create_pipe(start: Point, end: Point, radius: f64, sides: usize) -> Self {
+    pub fn create_pipe(start: Point, end: Point, radius: f64) -> Self {
         let mut mesh = Mesh::new();
         
-        // Direction vector from start to end
+        // Compute transformation matrix for the pipe segment
         let direction = Vector::new(end.x - start.x, end.y - start.y, end.z - start.z);
+        let length = direction.length();
         
-        // Skip if the pipe has zero length
-        if direction.length() < 1e-6 {
-            return mesh;
+        if length < 1e-6 {
+            return mesh; // Degenerate case
         }
         
-        // Create an orthonormal basis for the cylinder
         let axis = direction.normalize();
         
-        // Find perpendicular vectors for the cylinder cross section
-        // Using a straightforward and stable approach to pick the perpendicular vector
-        let perpendicular = if axis.z.abs() < 0.9 {
-            // If not nearly parallel with Z, use Z-axis for cross product
-            Vector::new(0.0, 0.0, 1.0).cross(&axis).normalize()
+        // Create transformation matrix
+        // 1. Scale: radius in X,Y and length in Z
+        let scale = Xform::scaling(radius, radius, length);
+        
+        // 2. Rotation: align Z-axis with line direction
+        let z_axis = Vector::new(0.0, 0.0, 1.0);
+        let rotation = if (axis.dot(&z_axis) - 1.0).abs() < 1e-6 {
+            // Already aligned with Z
+            Xform::identity()
+        } else if (axis.dot(&z_axis) + 1.0).abs() < 1e-6 {
+            // Opposite to Z, rotate 180 degrees around X
+            Xform::rotation_x(PI)
         } else {
-            // Otherwise use X-axis for cross product
-            Vector::new(1.0, 0.0, 0.0).cross(&axis).normalize()
+            // General case: rotate around cross product
+            let rotation_axis = z_axis.cross(&axis).normalize();
+            let angle = z_axis.dot(&axis).acos();
+            Xform::rotation(&rotation_axis, angle)
         };
         
-        // Now get the third basis vector with another cross product
-        let binormal = axis.cross(&perpendicular).normalize();
+        // 3. Translation: move to midpoint of segment
+        let midpoint = Point::new(
+            (start.x + end.x) / 2.0,
+            (start.y + end.y) / 2.0,
+            (start.z + end.z) / 2.0,
+        );
+        let translation = Xform::translation(midpoint.x, midpoint.y, midpoint.z);
         
-        // Add bottom cap center vertex
-        let bottom_center = mesh.add_vertex(start.clone(), None);
+        // Combine transformations: T * R * S
+        let transform = translation * rotation * scale;
         
-        // Add bottom cap rim vertices
-        let mut bottom_rim = Vec::with_capacity(sides);
-        for i in 0..sides {
-            let angle = i as f64 * 2.0 * PI / sides as f64;
-            let x = angle.cos();
-            let y = angle.sin();
-            
-            let point = Point::new(
-                start.x + radius * (x * perpendicular.x + y * binormal.x),
-                start.y + radius * (x * perpendicular.y + y * binormal.y),
-                start.z + radius * (x * perpendicular.z + y * binormal.z)
-            );
-            
-            bottom_rim.push(mesh.add_vertex(point, None));
+        // Hardcoded vertices for 12-sided unit cylinder
+        let unit_vertices = vec![
+            Point::new(0.0, 0.0, -0.5), // Bottom center
+            Point::new(1.0000000000, 0.0000000000, -0.5), // Bottom rim 0
+            Point::new(0.8660254038, 0.5000000000, -0.5), // Bottom rim 1
+            Point::new(0.5000000000, 0.8660254038, -0.5), // Bottom rim 2
+            Point::new(0.0000000000, 1.0000000000, -0.5), // Bottom rim 3
+            Point::new(-0.5000000000, 0.8660254038, -0.5), // Bottom rim 4
+            Point::new(-0.8660254038, 0.5000000000, -0.5), // Bottom rim 5
+            Point::new(-1.0000000000, 0.0000000000, -0.5), // Bottom rim 6
+            Point::new(-0.8660254038, -0.5000000000, -0.5), // Bottom rim 7
+            Point::new(-0.5000000000, -0.8660254038, -0.5), // Bottom rim 8
+            Point::new(-0.0000000000, -1.0000000000, -0.5), // Bottom rim 9
+            Point::new(0.5000000000, -0.8660254038, -0.5), // Bottom rim 10
+            Point::new(0.8660254038, -0.5000000000, -0.5), // Bottom rim 11
+            Point::new(0.0, 0.0, 0.5), // Top center
+            Point::new(1.0000000000, 0.0000000000, 0.5), // Top rim 0
+            Point::new(0.8660254038, 0.5000000000, 0.5), // Top rim 1
+            Point::new(0.5000000000, 0.8660254038, 0.5), // Top rim 2
+            Point::new(0.0000000000, 1.0000000000, 0.5), // Top rim 3
+            Point::new(-0.5000000000, 0.8660254038, 0.5), // Top rim 4
+            Point::new(-0.8660254038, 0.5000000000, 0.5), // Top rim 5
+            Point::new(-1.0000000000, 0.0000000000, 0.5), // Top rim 6
+            Point::new(-0.8660254038, -0.5000000000, 0.5), // Top rim 7
+            Point::new(-0.5000000000, -0.8660254038, 0.5), // Top rim 8
+            Point::new(-0.0000000000, -1.0000000000, 0.5), // Top rim 9
+            Point::new(0.5000000000, -0.8660254038, 0.5), // Top rim 10
+            Point::new(0.8660254038, -0.5000000000, 0.5), // Top rim 11
+        ];
+        
+        // Transform and add all vertices to mesh
+        let mut vertex_keys = Vec::with_capacity(unit_vertices.len());
+        for vertex in unit_vertices {
+            let transformed_vertex = transform.transform_point(&vertex);
+            vertex_keys.push(mesh.add_vertex(transformed_vertex, None));
         }
         
-        // Add top cap center vertex
-        let top_center = mesh.add_vertex(end.clone(), None);
+        // Hardcoded faces for 12-sided unit cylinder
+        let faces = vec![
+            vec![0, 2, 1], vec![0, 3, 2], vec![0, 4, 3], vec![0, 5, 4], // Bottom cap
+            vec![0, 6, 5], vec![0, 7, 6], vec![0, 8, 7], vec![0, 9, 8],
+            vec![0, 10, 9], vec![0, 11, 10], vec![0, 12, 11], vec![0, 1, 12],
+            vec![13, 14, 15], vec![13, 15, 16], vec![13, 16, 17], vec![13, 17, 18], // Top cap
+            vec![13, 18, 19], vec![13, 19, 20], vec![13, 20, 21], vec![13, 21, 22],
+            vec![13, 22, 23], vec![13, 23, 24], vec![13, 24, 25], vec![13, 25, 14],
+            vec![1, 2, 14], vec![14, 2, 15], vec![2, 3, 15], vec![15, 3, 16], // Sides
+            vec![3, 4, 16], vec![16, 4, 17], vec![4, 5, 17], vec![17, 5, 18],
+            vec![5, 6, 18], vec![18, 6, 19], vec![6, 7, 19], vec![19, 7, 20],
+            vec![7, 8, 20], vec![20, 8, 21], vec![8, 9, 21], vec![21, 9, 22],
+            vec![9, 10, 22], vec![22, 10, 23], vec![10, 11, 23], vec![23, 11, 24],
+            vec![11, 12, 24], vec![24, 12, 25], vec![12, 1, 25], vec![25, 1, 14],
+        ];
         
-        // Add top cap rim vertices
-        let mut top_rim = Vec::with_capacity(sides);
-        for i in 0..sides {
-            let angle = i as f64 * 2.0 * PI / sides as f64;
-            let x = angle.cos();
-            let y = angle.sin();
-            
-            let point = Point::new(
-                end.x + radius * (x * perpendicular.x + y * binormal.x),
-                end.y + radius * (x * perpendicular.y + y * binormal.y),
-                end.z + radius * (x * perpendicular.z + y * binormal.z)
-            );
-            
-            top_rim.push(mesh.add_vertex(point, None));
-        }
-        
-        // Create bottom cap triangular faces
-        for i in 0..sides {
-            let v1 = bottom_rim[i];
-            let v2 = bottom_rim[(i + 1) % sides];
-            mesh.add_face(vec![bottom_center, v2, v1], None);
-        }
-        
-        // Create top cap triangular faces
-        for i in 0..sides {
-            let v1 = top_rim[i];
-            let v2 = top_rim[(i + 1) % sides];
-            mesh.add_face(vec![top_center, v1, v2], None);
-        }
-        
-        // Create side quadrilateral faces (two triangles per side)
-        for i in 0..sides {
-            let bottom_curr = bottom_rim[i];
-            let bottom_next = bottom_rim[(i + 1) % sides];
-            let top_curr = top_rim[i];
-            let top_next = top_rim[(i + 1) % sides];
-            
-            // First triangle of the quad
-            mesh.add_face(vec![bottom_curr, bottom_next, top_curr], None);
-            
-            // Second triangle of the quad
-            mesh.add_face(vec![top_curr, bottom_next, top_next], None);
+        // Add all faces to mesh
+        for face_indices in faces {
+            let face_vertices: Vec<usize> = face_indices.iter().map(|&i| vertex_keys[i]).collect();
+            mesh.add_face(face_vertices, None);
         }
         
         mesh
     }
+
+
 
     /// Create a halfedge mesh from a list of polygons.
     /// 
@@ -1182,10 +1194,8 @@ impl Mesh {
     /// let pipe_meshes = mesh.extract_edges_as_pipes(0.05, Some(8));
     /// assert_eq!(pipe_meshes.len(), 3); // Triangle has 3 edges
     /// ```
-    pub fn extract_edges_as_pipes(&self, radius: f64, sides: Option<usize>) -> Vec<Mesh> {
+    pub fn extract_edges_as_pipes(&self, radius: f64, _sides: Option<usize>) -> Vec<Mesh> {
         use std::collections::HashSet;
-        
-        let sides = sides.unwrap_or(8); // Default to 8 sides
         let mut unique_edges = HashSet::new();
         let mut pipe_meshes = Vec::new();
         
@@ -1206,7 +1216,7 @@ impl Mesh {
                         self.vertex_position(v2)
                     ) {
                         // Create pipe mesh for this edge
-                        let pipe_mesh = Mesh::create_pipe(pos1, pos2, radius, sides);
+                        let pipe_mesh = Mesh::create_pipe(pos1, pos2, radius);
                         pipe_meshes.push(pipe_mesh);
                     }
                 }

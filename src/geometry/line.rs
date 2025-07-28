@@ -166,10 +166,8 @@ impl Line{
         let end = Point::new(self.x1, self.y1, self.z1);
         
         // Use fixed 8 sides for the pipe cross-section
-        let sides = 8;
-        
         // Generate the mesh
-        self.mesh = Some(Mesh::create_pipe(start, end, thickness, sides));
+        self.mesh = Some(Mesh::create_pipe(start, end, thickness));
         
         // If the line has a color, apply it to the mesh
         if self.data.has_color() {

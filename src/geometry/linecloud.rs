@@ -249,7 +249,7 @@ impl LineCloud {
         // Get thickness from data
         let thickness = self.data.get_thickness();
         // Use fixed 8 sides for all pipes
-        let sides = 8;
+
         
         self.meshes.clear();
         
@@ -259,7 +259,7 @@ impl LineCloud {
             let end = Point::new(line.x1, line.y1, line.z1);
             
             // Create pipe mesh
-            let mut mesh = Mesh::create_pipe(start, end, thickness, sides);
+            let mut mesh = Mesh::create_pipe(start, end, thickness);
             
             // Apply line color to the mesh if available
             if i < self.colors.len() {

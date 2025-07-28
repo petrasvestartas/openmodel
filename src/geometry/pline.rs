@@ -87,7 +87,7 @@ impl Pline {
             let thickness = self.data.get_thickness();
             if thickness > 0.0 { thickness } else { 0.05 }
         });
-        let pipe_sides = sides.unwrap_or(8);
+        let _pipe_sides = sides.unwrap_or(8);
         
         // Create a pipe mesh for each segment
         for i in 0..self.points.len() - 1 {
@@ -98,8 +98,7 @@ impl Pline {
             let mut pipe_mesh = Mesh::create_pipe(
                 start_point.clone(),
                 end_point.clone(),
-                pipe_radius,
-                pipe_sides
+                pipe_radius
             );
             
             // Apply color from data if available

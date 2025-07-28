@@ -54,18 +54,18 @@ fn test_extract_edges_as_pipes_triangle() {
     
     // Extract edges as pipe meshes
     let radius = 0.05;
-    let sides = 8;
+    let sides = 8; // This parameter is ignored, create_pipe always uses 12 sides
     let pipe_meshes = mesh.extract_edges_as_pipes(radius, Some(sides));
     
     // Triangle should have exactly 3 pipe meshes
     assert_eq!(pipe_meshes.len(), 3);
     
-    // Each pipe mesh should have the correct structure
+    // Each pipe mesh should have the correct structure (always 12-sided)
     for pipe_mesh in &pipe_meshes {
-        // Each pipe should have 2 + 8*2 vertices (2 centers + 8*2 rim vertices)
-        assert_eq!(pipe_mesh.number_of_vertices(), 2 + sides * 2);
-        // Each pipe should have 8 + 8 + 8*2 faces (bottom cap + top cap + sides)
-        assert_eq!(pipe_mesh.number_of_faces(), sides + sides + sides * 2);
+        // Each pipe should have 2 + 12*2 vertices (2 centers + 12*2 rim vertices)
+        assert_eq!(pipe_mesh.number_of_vertices(), 2 + 12 * 2);
+        // Each pipe should have 12 + 12 + 12*2 faces (bottom cap + top cap + sides)
+        assert_eq!(pipe_mesh.number_of_faces(), 12 + 12 + 12 * 2);
     }
 }
 
@@ -85,10 +85,10 @@ fn test_extract_edges_as_pipes_with_default_sides() {
     // Triangle should have exactly 3 pipe meshes
     assert_eq!(pipe_meshes.len(), 3);
     
-    // Each pipe mesh should use default 8 sides
+    // Each pipe mesh always uses 12 sides (sides parameter is ignored)
     for pipe_mesh in &pipe_meshes {
-        assert_eq!(pipe_mesh.number_of_vertices(), 2 + 8 * 2); // 2 + 8*2 = 18
-        assert_eq!(pipe_mesh.number_of_faces(), 8 + 8 + 8 * 2); // 8 + 8 + 16 = 32
+        assert_eq!(pipe_mesh.number_of_vertices(), 2 + 12 * 2); // 2 + 12*2 = 26
+        assert_eq!(pipe_mesh.number_of_faces(), 12 + 12 + 12 * 2); // 12 + 12 + 24 = 48
     }
 }
 

@@ -16,13 +16,13 @@ fn test_pline_to_pipe_meshes_basic() {
     // Should have 2 segments (3 points = 2 segments)
     assert_eq!(pipe_meshes.len(), 2);
     
-    // Each pipe mesh should have the expected vertex and face counts
+    // Each pipe mesh should have the expected vertex and face counts (always 12-sided)
     for mesh in &pipe_meshes {
-        // Pipe mesh should have: 2 center vertices + 8*2 side vertices = 18 vertices
-        assert_eq!(mesh.number_of_vertices(), 18);
+        // Pipe mesh should have: 2 center vertices + 12*2 side vertices = 26 vertices
+        assert_eq!(mesh.number_of_vertices(), 26);
         
-        // Pipe mesh should have: 8 bottom faces + 8 top faces + 8*2 side faces = 32 faces
-        assert_eq!(mesh.number_of_faces(), 32);
+        // Pipe mesh should have: 12 bottom faces + 12 top faces + 12*2 side faces = 48 faces
+        assert_eq!(mesh.number_of_faces(), 48);
     }
 }
 
@@ -85,12 +85,12 @@ fn test_pline_to_pipe_meshes_complex() {
     // Should have 4 segments (5 points = 4 segments)
     assert_eq!(pipe_meshes.len(), 4);
     
-    // Each pipe mesh should have the expected vertex and face counts for 6 sides
+    // Each pipe mesh should have the expected vertex and face counts (always 12-sided, sides parameter ignored)
     for mesh in &pipe_meshes {
-        // Pipe mesh should have: 2 center vertices + 6*2 side vertices = 14 vertices
-        assert_eq!(mesh.number_of_vertices(), 14);
+        // Pipe mesh should have: 2 center vertices + 12*2 side vertices = 26 vertices
+        assert_eq!(mesh.number_of_vertices(), 26);
         
-        // Pipe mesh should have: 6 bottom faces + 6 top faces + 6*2 side faces = 24 faces
-        assert_eq!(mesh.number_of_faces(), 24);
+        // Pipe mesh should have: 12 bottom faces + 12 top faces + 12*2 side faces = 48 faces
+        assert_eq!(mesh.number_of_faces(), 48);
     }
 }
