@@ -1,32 +1,136 @@
 {
   "colors": [
     {
-      "a": 255,
-      "b": 0,
-      "g": 0,
-      "r": 255
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "a": 255,
+        "b": 0,
+        "g": 0,
+        "r": 255
+      },
+      "dtype": "openmodel.primitives/Color",
+      "guid": "4551b1a3-e81c-4bea-9e3c-2a3380e56dda",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
     },
     {
-      "a": 255,
-      "b": 0,
-      "g": 255,
-      "r": 0
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "a": 255,
+        "b": 0,
+        "g": 255,
+        "r": 0
+      },
+      "dtype": "openmodel.primitives/Color",
+      "guid": "4c6dcf96-acc9-4c7c-8b5a-b205d733c56e",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
     },
     {
-      "a": 255,
-      "b": 255,
-      "g": 0,
-      "r": 0
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "a": 255,
+        "b": 255,
+        "g": 0,
+        "r": 0
+      },
+      "dtype": "openmodel.primitives/Color",
+      "guid": "6f53d632-0aab-4dfa-864e-9575b3b02640",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
     }
   ],
   "line_clouds": [
     {
       "colors": [
         {
-          "a": 255,
-          "b": 0,
-          "g": 0,
-          "r": 255
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "a": 255,
+            "b": 0,
+            "g": 0,
+            "r": 255
+          },
+          "dtype": "openmodel.primitives/Color",
+          "guid": "d61433c1-b5ac-4e62-8a50-3e82edb376c5",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         }
       ],
       "data": {
@@ -37,7 +141,7 @@
           0,
           0
         ],
-        "guid": "55d3bac6-e5cb-412f-9a85-a3c1de2f0f7d",
+        "guid": "3844f177-7f03-46ff-8901-854492092b33",
         "name": "Data",
         "parent": null,
         "thickness": 1.0,
@@ -70,7 +174,7 @@
               0,
               0
             ],
-            "guid": "1a881899-b48c-46c2-a592-fb3e61e3fd5c",
+            "guid": "8bfff0e6-469d-4cf9-a39e-0ac2ebc067ca",
             "name": "Line",
             "parent": null,
             "thickness": 1.0,
@@ -102,7 +206,33 @@
         }
       ],
       "xform": {
-        "m": [
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "m": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "dtype": "openmodel.primitives/Xform",
+        "guid": "f87c69ae-4f51-4f2f-93f1-19377edab45a",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
           1.0,
           0.0,
           0.0,
@@ -133,7 +263,7 @@
           0,
           0
         ],
-        "guid": "4babb637-ddcf-4f8e-ac01-c68447de3313",
+        "guid": "e3441860-5c6c-4d3a-ae22-1d5a418c25f8",
         "name": "Line",
         "parent": null,
         "thickness": 1.0,
@@ -172,7 +302,7 @@
           0,
           0
         ],
-        "guid": "fbd892c3-bd68-4872-b9bd-b1a6f3bf71e6",
+        "guid": "1c9af8f6-1df3-4fa9-b081-cb76a9db0c25",
         "name": "Line",
         "parent": null,
         "thickness": 1.0,
@@ -213,7 +343,7 @@
           0,
           0
         ],
-        "guid": "f53b4d45-ef9d-4d18-a4b5-781a06e7c577",
+        "guid": "cac0f64a-1531-4b23-bc4c-871e2b1a1106",
         "name": "Mesh",
         "parent": null,
         "thickness": 1.0,
@@ -304,7 +434,7 @@
           0,
           0
         ],
-        "guid": "693ec3ef-433f-449b-b3c0-22180e6059bf",
+        "guid": "86a6d6df-68ab-493d-b16d-404ec2b0ccb3",
         "name": "Plane",
         "parent": null,
         "thickness": 1.0,
@@ -336,7 +466,7 @@
             0,
             0
           ],
-          "guid": "e64a9923-6bc3-4af0-9362-b2f3bc5ec530",
+          "guid": "85f1ec3d-e395-4475-b766-0306123f9f28",
           "name": "Point",
           "parent": null,
           "thickness": 1.0,
@@ -364,19 +494,97 @@
         "z": 0.0
       },
       "xaxis": {
-        "x": 1.0,
-        "y": 0.0,
-        "z": 0.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "60f09300-5d3a-4dcd-ac59-87789569e2d5",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       },
       "yaxis": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "cb8341bb-6faf-43a7-9491-9cf59f184c83",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       },
       "zaxis": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 1.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "f0da33c3-434d-4cfc-9aaa-9268ddd5cf2f",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       }
     },
     {
@@ -392,7 +600,7 @@
           0,
           0
         ],
-        "guid": "74206739-66b9-4906-9f15-40ca107fd9bd",
+        "guid": "25959ee0-fb16-4b84-b7ec-6985c65123bf",
         "name": "Plane",
         "parent": null,
         "thickness": 1.0,
@@ -424,7 +632,7 @@
             0,
             0
           ],
-          "guid": "4ed00068-d95b-4c7f-81f1-21d94be5a88d",
+          "guid": "8fb3ced3-d6ce-46bf-af2f-4b03001205d4",
           "name": "Point",
           "parent": null,
           "thickness": 1.0,
@@ -452,19 +660,97 @@
         "z": 1.0
       },
       "xaxis": {
-        "x": 1.0,
-        "y": 0.0,
-        "z": 0.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "ba163e37-e992-4914-a647-9a9a1212e232",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       },
       "yaxis": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "4c409dd2-4c79-4f52-9013-01e2c4b85d32",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       },
       "zaxis": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 1.0
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        "dtype": "openmodel.primitives/Vector",
+        "guid": "aef74602-ea04-4644-81ba-09581b4db1b3",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
       }
     }
   ],
@@ -478,7 +764,7 @@
           0,
           0
         ],
-        "guid": "1a03d6da-992a-4398-bf2b-8f3f483ea890",
+        "guid": "3e3f6423-a26c-4e90-a40f-ad0511f4b5a8",
         "name": "Data",
         "parent": null,
         "thickness": 1.0,
@@ -514,7 +800,7 @@
             0,
             0
           ],
-          "guid": "0e21cf8a-dc94-4b09-96bd-dc1209a59fe8",
+          "guid": "e758f9c4-371e-4f60-adab-e9b7a990fc37",
           "name": "Plane",
           "parent": null,
           "thickness": 1.0,
@@ -546,7 +832,7 @@
               0,
               0
             ],
-            "guid": "e42d7640-f3a2-4955-b1e1-05fb0b87bdde",
+            "guid": "0cf10705-0733-4e08-a2a0-c6f152d141b1",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -574,19 +860,97 @@
           "z": 0.0
         },
         "xaxis": {
-          "x": -0.0,
-          "y": 1.0,
-          "z": 0.0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "x": -0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "dtype": "openmodel.primitives/Vector",
+          "guid": "ec431a10-f7cd-45c7-8f00-ee8d565dac2b",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         },
         "yaxis": {
-          "x": 1.0,
-          "y": 0.0,
-          "z": 0.0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "x": 1.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "dtype": "openmodel.primitives/Vector",
+          "guid": "4654e3a8-b130-41e5-95bf-e9732d5a73d5",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         },
         "zaxis": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": -1.0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": -1.0
+          },
+          "dtype": "openmodel.primitives/Vector",
+          "guid": "f5de7d77-4a45-4878-a589-3edba14d813e",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         }
       },
       "points": [
@@ -599,7 +963,7 @@
               0,
               0
             ],
-            "guid": "e42d7640-f3a2-4955-b1e1-05fb0b87bdde",
+            "guid": "0cf10705-0733-4e08-a2a0-c6f152d141b1",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -635,7 +999,7 @@
               0,
               0
             ],
-            "guid": "1a48c116-e097-4374-9b2e-3b65735f5076",
+            "guid": "d73eb4a5-bc6b-4f56-8477-c9df7c55154d",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -671,7 +1035,7 @@
               0,
               0
             ],
-            "guid": "5abc8e60-a6a8-4019-975b-04502ccf6f56",
+            "guid": "f2b415f5-66ae-486f-877f-7ccdb42dfdcb",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -705,16 +1069,68 @@
     {
       "colors": [
         {
-          "a": 255,
-          "b": 0,
-          "g": 0,
-          "r": 255
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "a": 255,
+            "b": 0,
+            "g": 0,
+            "r": 255
+          },
+          "dtype": "openmodel.primitives/Color",
+          "guid": "fae5296f-fa72-4d63-bb69-76034b2d9d0f",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         },
         {
-          "a": 255,
-          "b": 0,
-          "g": 255,
-          "r": 0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "a": 255,
+            "b": 0,
+            "g": 255,
+            "r": 0
+          },
+          "dtype": "openmodel.primitives/Color",
+          "guid": "4290a99d-f509-4910-9021-7153daee7063",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         }
       ],
       "data": {
@@ -725,7 +1141,7 @@
           0,
           0
         ],
-        "guid": "4bb10c32-ee1f-4e67-ab48-864877684be9",
+        "guid": "d3359b6a-6870-450b-87fd-cafe3aaa6e42",
         "name": "Data",
         "parent": null,
         "thickness": 1.0,
@@ -750,14 +1166,66 @@
       },
       "normals": [
         {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 1.0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 1.0
+          },
+          "dtype": "openmodel.primitives/Vector",
+          "guid": "dae670d6-fd5e-4e52-9d75-f5ce0b430bea",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         },
         {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 1.0
+          "adjacency_indices": [],
+          "adjacency_types": [],
+          "data": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 1.0
+          },
+          "dtype": "openmodel.primitives/Vector",
+          "guid": "33bb9fbf-fecd-4da7-a0ff-9e85582ac08e",
+          "name": "Data",
+          "parent": null,
+          "transformation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
         }
       ],
       "points": [
@@ -770,7 +1238,7 @@
               0,
               0
             ],
-            "guid": "e9225f95-8ef0-4552-b7a2-e1c0058a6c0a",
+            "guid": "7f439a28-663d-4a6c-b161-6ac380c60db7",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -806,7 +1274,7 @@
               0,
               0
             ],
-            "guid": "959038d0-2e85-4e91-b135-f4a04b722383",
+            "guid": "0a685d90-5be4-4f65-b95e-b6044215166b",
             "name": "Point",
             "parent": null,
             "thickness": 1.0,
@@ -835,7 +1303,33 @@
         }
       ],
       "xform": {
-        "m": [
+        "adjacency_indices": [],
+        "adjacency_types": [],
+        "data": {
+          "m": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "dtype": "openmodel.primitives/Xform",
+        "guid": "bb12a2af-2978-4d44-bc1b-180a49f14dc2",
+        "name": "Data",
+        "parent": null,
+        "transformation": [
           1.0,
           0.0,
           0.0,
@@ -866,7 +1360,7 @@
           0,
           0
         ],
-        "guid": "e301a360-bdac-40fb-a489-dc16ddf3dc8c",
+        "guid": "33dec7aa-bb18-45c2-82a7-4934947643d9",
         "name": "Point",
         "parent": null,
         "thickness": 1.0,
@@ -902,7 +1396,7 @@
           0,
           0
         ],
-        "guid": "1435d090-9f52-46b2-9f09-5c68a13ab9f5",
+        "guid": "9cc3793a-bad6-42e4-9b3b-eefc2b50de18",
         "name": "Point",
         "parent": null,
         "thickness": 1.0,
@@ -938,7 +1432,7 @@
           0,
           0
         ],
-        "guid": "1b372dd4-7854-4a7f-bb55-dd54cd4bf9ee",
+        "guid": "a5e7aabe-a422-4385-9a66-7f08a7af8657",
         "name": "Point",
         "parent": null,
         "thickness": 1.0,
@@ -968,24 +1462,18 @@
   ],
   "vectors": [
     {
-      "x": 1.0,
-      "y": 0.0,
-      "z": 0.0
-    },
-    {
-      "x": 0.0,
-      "y": 1.0,
-      "z": 0.0
-    },
-    {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 1.0
-    }
-  ],
-  "xforms": [
-    {
-      "m": [
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "dtype": "openmodel.primitives/Vector",
+      "guid": "c580bb3f-d17b-4ed6-8165-c189127e6f8c",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
         1.0,
         0.0,
         0.0,
@@ -998,25 +1486,161 @@
         0.0,
         1.0,
         0.0,
-        1.0,
-        2.0,
-        3.0,
+        0.0,
+        0.0,
+        0.0,
         1.0
       ]
     },
     {
-      "m": [
-        2.0,
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "dtype": "openmodel.primitives/Vector",
+      "guid": "f3cfad03-94d0-4748-8e49-8c343c38057c",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        2.0,
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        2.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "dtype": "openmodel.primitives/Vector",
+      "guid": "e6d5a234-96b6-40ee-bff2-3c7afa08f786",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "xforms": [
+    {
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "m": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          1.0
+        ]
+      },
+      "dtype": "openmodel.primitives/Xform",
+      "guid": "0af67d05-2f7e-4f4e-b930-4dc4c6e0c07a",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "adjacency_indices": [],
+      "adjacency_types": [],
+      "data": {
+        "m": [
+          2.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "dtype": "openmodel.primitives/Xform",
+      "guid": "647f32dd-bdf7-48f5-bdde-f9ccaf09b868",
+      "name": "Data",
+      "parent": null,
+      "transformation": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
         0.0,
         0.0,
         0.0,

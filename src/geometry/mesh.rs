@@ -2045,7 +2045,7 @@ impl Mesh {
 // JSON serialization support
 impl JsonSerializable for Mesh {
     fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+        self.to_json_data(false)
     }
 }
 

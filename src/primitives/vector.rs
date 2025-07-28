@@ -1,12 +1,13 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::fmt;
 
 use crate::common::json_serialization::{HasJsonData, FromJsonData};
+use crate::common::Data;
 
 /// A vector in 3D space with x, y, z components
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Vector {
     /// The x component of the vector.
     pub x: f64,
@@ -16,32 +17,47 @@ pub struct Vector {
     pub z: f64,
 }
 
+// Custom Serialize implementation to use COMPAS-style format by default
+impl Serialize for Vector {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use COMPAS-style format with dtype when serializing
+        let value = self.to_json_data(false);
+        value.serialize(serializer)
+    }
+}
+
 // Implement JSON serialization for Vector
 impl HasJsonData for Vector {
-    fn to_json_data(&self, _minimal: bool) -> Value {
-        serde_json::json!({
-            "type": "Vector",
+    fn to_json_data(&self, minimal: bool) -> Value {
+        let geometric_data = serde_json::json!({
             "x": self.x,
             "y": self.y,
-            "z": self.z,
-        })
+            "z": self.z
+        });
+        
+        // Create a minimal Data instance for Vector (no metadata needed)
+        let data = Data::new();
+        data.to_json_data("openmodel.primitives/Vector", geometric_data, minimal)
     }
 }
 
 // Implement JSON deserialization for Vector
 impl FromJsonData for Vector {
     fn from_json_data(data: &Value) -> Option<Self> {
-        // Check if we have a vector type
-        if let Some(typ) = data.get("type").and_then(|t| t.as_str()) {
-            if typ != "Vector" {
-                return None;
-            }
-        }
+        // Handle both COMPAS-style format and direct format
+        let vector_data = if let Some(data_field) = data.get("data") {
+            data_field // COMPAS-style format
+        } else {
+            data // Direct format or legacy format
+        };
         
         // Extract coordinates
-        let x = data.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let y = data.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let z = data.get("z").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let x = vector_data.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let y = vector_data.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let z = vector_data.get("z").and_then(|v| v.as_f64()).unwrap_or(0.0);
         
         Some(Vector::new(x, y, z))
     }

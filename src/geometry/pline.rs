@@ -2,7 +2,7 @@ use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::geometry::Plane;
 use crate::geometry::Mesh;
-use crate::common::{JsonSerializable, FromJsonData};
+use crate::common::{JsonSerializable, FromJsonData, HasJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;
@@ -254,9 +254,13 @@ impl fmt::Display for Pline {
 }
 
 // JSON serialization support
-impl JsonSerializable for Pline {
-    fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+impl HasJsonData for Pline {
+    fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        let geometric_data = serde_json::json!({
+            "points": self.points,
+            "plane": self.plane
+        });
+        self.data.to_json_data("openmodel.geometry/Pline", geometric_data, minimal)
     }
 }
 

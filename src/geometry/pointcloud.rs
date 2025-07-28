@@ -1,5 +1,5 @@
 use crate::geometry::{Point, Vector, Color, Xform};
-use crate::common::{JsonSerializable, FromJsonData, Data};
+use crate::common::{JsonSerializable, FromJsonData, HasJsonData, Data};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::fmt;
@@ -192,9 +192,13 @@ impl fmt::Display for PointCloud {
 }
 
 // JSON serialization support
-impl JsonSerializable for PointCloud {
-    fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+impl HasJsonData for PointCloud {
+    fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        let geometric_data = serde_json::json!({
+            "points": self.points,
+            "colors": self.colors
+        });
+        self.data.to_json_data("openmodel.geometry/PointCloud", geometric_data, minimal)
     }
 }
 

@@ -1,8 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
+use crate::common::{JsonSerializable, FromJsonData, Data, HasJsonData};
+use serde_json::Value;
 
 /// A color in RGBA format
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct Color {
     /// Red component (0-255)
     pub r: u8,
@@ -266,6 +268,56 @@ impl fmt::Display for Color {
             write!(f, "RGB({}, {}, {})", self.r, self.g, self.b)
         } else {
             write!(f, "RGBA({}, {}, {}, {})", self.r, self.g, self.b, self.a)
+        }
+    }
+}
+
+// Custom Serialize implementation to use COMPAS-style format by default
+impl Serialize for Color {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use COMPAS-style format with dtype when serializing
+        let value = self.to_json_data(false);
+        value.serialize(serializer)
+    }
+}
+
+// COMPAS-style JSON serialization support
+impl HasJsonData for Color {
+    fn to_json_data(&self, minimal: bool) -> Value {
+        let geometric_data = serde_json::json!({
+            "r": self.r,
+            "g": self.g,
+            "b": self.b,
+            "a": self.a
+        });
+        
+        // Create a minimal Data instance for Color (no metadata needed)
+        let data = Data::new();
+        data.to_json_data("openmodel.primitives/Color", geometric_data, minimal)
+    }
+}
+
+impl FromJsonData for Color {
+    fn from_json_data(data: &Value) -> Option<Self> {
+        // Handle both COMPAS-style format and direct format
+        let color_data = if let Some(data_field) = data.get("data") {
+            data_field // COMPAS-style format
+        } else {
+            data // Direct format
+        };
+        
+        if let (Some(r), Some(g), Some(b), Some(a)) = (
+            color_data.get("r").and_then(|v| v.as_u64()).map(|v| v as u8),
+            color_data.get("g").and_then(|v| v.as_u64()).map(|v| v as u8),
+            color_data.get("b").and_then(|v| v.as_u64()).map(|v| v as u8),
+            color_data.get("a").and_then(|v| v.as_u64()).map(|v| v as u8)
+        ) {
+            Some(Color::new(r, g, b, a))
+        } else {
+            None
         }
     }
 }

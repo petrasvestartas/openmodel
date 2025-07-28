@@ -1,5 +1,5 @@
 use crate::geometry::{Line, Color, Xform, Mesh};
-use crate::common::{JsonSerializable, FromJsonData, Data};
+use crate::common::{JsonSerializable, FromJsonData, HasJsonData, Data};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::fmt;
@@ -213,9 +213,13 @@ impl fmt::Display for LineCloud {
 }
 
 // JSON serialization support
-impl JsonSerializable for LineCloud {
-    fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+impl HasJsonData for LineCloud {
+    fn to_json_data(&self, minimal: bool) -> serde_json::Value {
+        let geometric_data = serde_json::json!({
+            "lines": self.lines,
+            "colors": self.colors
+        });
+        self.data.to_json_data("openmodel.geometry/LineCloud", geometric_data, minimal)
     }
 }
 

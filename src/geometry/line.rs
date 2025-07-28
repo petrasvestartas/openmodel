@@ -606,7 +606,15 @@ impl fmt::Display for Line{
 // JSON serialization support
 impl JsonSerializable for Line {
     fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+        let geometric_data = serde_json::json!({
+            "x0": self.x0,
+            "y0": self.y0,
+            "z0": self.z0,
+            "x1": self.x1,
+            "y1": self.y1,
+            "z1": self.z1
+        });
+        self.data.to_json_data("openmodel.geometry/Line", geometric_data, false)
     }
 }
 

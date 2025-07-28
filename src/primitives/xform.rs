@@ -1,12 +1,14 @@
 use crate::primitives::vector::Vector;
 use crate::geometry::point::Point;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::ops::{Index, IndexMut, Mul, MulAssign};
 use std::fmt;
+use crate::common::{HasJsonData, FromJsonData, Data};
+use serde_json::Value;
 
 /// A 4x4 transformation matrix in 3D space
 /// Stored in column-major order (standard in graphics)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Xform {
     /// The matrix elements stored in column-major order as a flattened array
     pub m: [f64; 16],
@@ -576,5 +578,59 @@ mod tests {
         assert_eq!(transformed.x, 1.0);
         assert_eq!(transformed.y, 2.0);
         assert_eq!(transformed.z, 3.0);
+    }
+}
+
+// Custom Serialize implementation to use COMPAS-style format by default
+impl Serialize for Xform {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use COMPAS-style format with dtype when serializing
+        let value = self.to_json_data(false);
+        value.serialize(serializer)
+    }
+}
+
+// COMPAS-style JSON serialization support
+impl HasJsonData for Xform {
+    fn to_json_data(&self, minimal: bool) -> Value {
+        let geometric_data = serde_json::json!({
+            "m": self.m
+        });
+        
+        // Create a minimal Data instance for Xform (no metadata needed)
+        let data = Data::new();
+        data.to_json_data("openmodel.primitives/Xform", geometric_data, minimal)
+    }
+}
+
+impl FromJsonData for Xform {
+    fn from_json_data(data: &Value) -> Option<Self> {
+        // Handle both COMPAS-style format and direct format
+        let xform_data = if let Some(data_field) = data.get("data") {
+            data_field // COMPAS-style format
+        } else {
+            data // Direct format
+        };
+        
+        if let Some(m_array) = xform_data.get("m").and_then(|v| v.as_array()) {
+            if m_array.len() == 16 {
+                let mut m = [0.0; 16];
+                for (i, val) in m_array.iter().enumerate() {
+                    if let Some(f) = val.as_f64() {
+                        m[i] = f;
+                    } else {
+                        return None;
+                    }
+                }
+                Some(Xform { m })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
