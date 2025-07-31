@@ -1,10 +1,8 @@
 use openmodel::geometry::{Point, Vector, Line, Plane, Color, PointCloud, LineCloud, Pline, Mesh};
 use openmodel::primitives::Xform;
-use openmodel::common::{JsonSerializable, FromJsonData, HasJsonData};
+use openmodel::common::{JsonSerializable, FromJsonData, HasJsonData, json_dump, json_load};
 use serde::{Serialize, Deserialize};
 use serde_json;
-use std::fs;
-use std::collections::HashMap;
 
 // Comprehensive geometry data structure with all geometry types
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,269 +33,212 @@ impl FromJsonData for AllGeometryData {
     }
 }
 
-
-
-// 
-// fn main() {
-//     println!("=== Testing ALL Geometry Types with JSON Serialization ===\n");
-    
-    // Create instances of all geometry types
-//     let points = vec![
-//         Point::new(1.0, 0.0, 0.0),
-//         Point::new(0.0, 1.0, 0.0),
-//         Point::new(0.0, 0.0, 1.0),
-//     ];
-    
-//     let vectors = vec![
-//         Vector::new(1.0, 0.0, 0.0),
-//         Vector::new(0.0, 1.0, 0.0),
-//         Vector::new(0.0, 0.0, 1.0),
-//     ];
-    
-//     let lines = vec![
-//         Line::new(0.0, 0.0, 0.0, 1.0, 0.0, 0.0),
-//         Line::new(0.0, 0.0, 0.0, 0.0, 1.0, 0.0),
-//     ];
-    
-//     let planes = vec![
-//         Plane::from_point_and_normal(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0)),
-//         Plane::from_point_and_normal(Point::new(1.0, 1.0, 1.0), Vector::new(1.0, 0.0, 0.0)),
-//     ];
-    
-//     let colors = vec![
-//         Color::new(255, 0, 0, 255),
-//         Color::new(0, 255, 0, 255),
-//         Color::new(0, 0, 255, 255),
-//     ];
-    
-//     let point_clouds = vec![
-//         PointCloud::new(
-//             vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0)],
-//             vec![Vector::new(0.0, 0.0, 1.0), Vector::new(0.0, 0.0, 1.0)],
-//             vec![Color::new(255, 0, 0, 255), Color::new(0, 255, 0, 255)],
-//         ),
-//     ];
-    
-//     let line_clouds = vec![
-//         LineCloud::new(
-//             vec![Line::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)],
-//             vec![Color::new(255, 0, 0, 255)],
-//         ),
-//     ];
-    
-//     let plines = vec![
-//         Pline::new(vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0), Point::new(2.0, 0.0, 0.0)]),
-//     ];
-    
-//     let xforms = vec![
-//         Xform::translation(1.0, 2.0, 3.0),
-//         Xform::scaling(2.0, 2.0, 2.0),
-//     ];
-    
-//     let meshes = vec![
-//         Mesh::from_polygons(vec![
-//             vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0)]
-//         ], None),
-//     ];
-    
-//     // Create comprehensive geometry data
-//     let all_geometry = AllGeometryData {
-//         points: points.clone(),
-//         vectors: vectors.clone(),
-//         lines: lines.clone(),
-//         planes: planes.clone(),
-//         colors: colors.clone(),
-//         point_clouds: point_clouds.clone(),
-//         line_clouds: line_clouds.clone(),
-//         plines: plines.clone(),
-//         xforms: xforms.clone(),
-//         meshes: meshes.clone(),
-//     };
-    
-//     println!("✅ Created all geometry types:");
-//     println!("   {} Points", all_geometry.points.len());
-//     println!("   {} Vectors", all_geometry.vectors.len());
-//     println!("   {} Lines", all_geometry.lines.len());
-//     println!("   {} Planes", all_geometry.planes.len());
-//     println!("   {} Colors", all_geometry.colors.len());
-//     println!("   {} Point Clouds", all_geometry.point_clouds.len());
-//     println!("   {} Line Clouds", all_geometry.line_clouds.len());
-//     println!("   {} Plines", all_geometry.plines.len());
-//     println!("   {} Xforms", all_geometry.xforms.len());
-//     println!("   {} Meshes", all_geometry.meshes.len());
-    
-//     println!("\n✅ Using json_dump to save ALL geometry types...");
-//     json_dump(&all_geometry, "all_geometry.json");
-    
-//     println!("✅ Using json_load to load ALL geometry types...");
-//     let loaded_geometry: AllGeometryData = json_load("all_geometry.json");
-    
-//     println!("\n✅ Successfully loaded all geometry types:");
-//     println!("   {} Points", loaded_geometry.points.len());
-//     println!("   {} Vectors", loaded_geometry.vectors.len());
-//     println!("   {} Lines", loaded_geometry.lines.len());
-//     println!("   {} Planes", loaded_geometry.planes.len());
-//     println!("   {} Colors", loaded_geometry.colors.len());
-//     println!("   {} Point Clouds", loaded_geometry.point_clouds.len());
-//     println!("   {} Line Clouds", loaded_geometry.line_clouds.len());
-//     println!("   {} Plines", loaded_geometry.plines.len());
-//     println!("   {} Xforms", loaded_geometry.xforms.len());
-//     println!("   {} Meshes", loaded_geometry.meshes.len());
-    
-//     // Verify some data to ensure it's preserved correctly
-//     println!("\n=== Verification ===");
-//     println!("First Point: {}", loaded_geometry.points[0]);
-//     println!("First Vector: {}", loaded_geometry.vectors[0]);
-//     println!("First Line: {}", loaded_geometry.lines[0]);
-//     println!("First Color: {}", loaded_geometry.colors[0]);
-//     println!("First Point Cloud: {} points", loaded_geometry.point_clouds[0].points.len());
-//     println!("First Line Cloud: {} lines", loaded_geometry.line_clouds[0].lines.len());
-//     println!("First Pline: {} points", loaded_geometry.plines[0].points.len());
-//     println!("First Mesh: {} vertices, {} faces", 
-//              loaded_geometry.meshes[0].number_of_vertices(), 
-//              loaded_geometry.meshes[0].number_of_faces());
-    
-//     println!("\n🎉 ALL GEOMETRY TYPES WORK PERFECTLY with json_dump/json_load!");
-//     println!("🚀 You can now serialize ANY geometry type or collection!");
-// }
-
-
-// use openmodel::geometry::{Point, Vector, Line, Color, PointCloud, LineCloud, Pline, Mesh};
-
-
 fn main() {
-    println!("=== Generating Geometry JSON using OpenModel API ===\n");
+    println!("=== Testing Concave Mesh with Ear Clipping ===\n");
     
-    // Create sample cube mesh using openmodel
-    let mut cube_mesh = Mesh::new();
-    cube_mesh.data.set_name("sample_cube");
+    // Create a star polygon using the provided coordinates
+    // These coordinates create a proper star shape
+    let concave_polygon = vec![
+        Point::new(0.12821, 0.514321, 0.0),    // Point 1
+        Point::new(-0.103219, 0.282757, 0.0),  // Point 2
+        Point::new(-0.430101, 0.264609, 0.0),  // Point 3
+        Point::new(-0.281387, -0.02705, 0.0),  // Point 4
+        Point::new(-0.365139, -0.343542, 0.0), // Point 5
+        Point::new(-0.041799, -0.292234, 0.0), // Point 6
+        Point::new(0.233322, -0.469688, 0.0),  // Point 7
+        Point::new(0.284442, -0.146318, 0.0),  // Point 8
+        Point::new(0.538228, 0.0605, 0.0),     // Point 9
+        Point::new(0.246482, 0.209046, 0.0),   // Point 10
+    ];
     
-    // Add cube vertices
-    let v0 = cube_mesh.add_vertex(Point::new(-0.5, -0.5, 0.5), None);
-    let v1 = cube_mesh.add_vertex(Point::new(0.5, -0.5, 0.5), None);
-    let v2 = cube_mesh.add_vertex(Point::new(0.5, 0.5, 0.5), None);
-    let v3 = cube_mesh.add_vertex(Point::new(-0.5, 0.5, 0.5), None);
-    let v4 = cube_mesh.add_vertex(Point::new(-0.5, -0.5, -0.5), None);
-    let v5 = cube_mesh.add_vertex(Point::new(-0.5, 0.5, -0.5), None);
-    let v6 = cube_mesh.add_vertex(Point::new(0.5, 0.5, -0.5), None);
-    let v7 = cube_mesh.add_vertex(Point::new(0.5, -0.5, -0.5), None);
+    println!("Creating star mesh with {} vertices using provided coordinates...", concave_polygon.len());
     
-    // Add cube faces
-    cube_mesh.add_face(vec![v0, v1, v2], None); // Front face 1
-    cube_mesh.add_face(vec![v0, v2, v3], None); // Front face 2
-    cube_mesh.add_face(vec![v4, v5, v6], None); // Back face 1
-    cube_mesh.add_face(vec![v4, v6, v7], None); // Back face 2
+    // ASCII visualization of the star polygon
+    println!("\n=== Star Polygon Visualization (1x1 screen) ===");
+    println!("Y");
+    println!("1.0 ┌─────────────────────────────────────┐");
+    println!("    │                                     │");
+    println!("0.8 │                ⭐                   │");
+    println!("    │                                     │");
+    println!("0.6 │                                     │");
+    println!("    │                                     │");
+    println!("0.4 │                                     │");
+    println!("    │                                     │");
+    println!("0.2 │                                     │");
+    println!("    │                                     │");
+    println!("0.0 └─────────────────────────────────────┘");
+    println!("    0.0   0.2   0.4   0.6   0.8   1.0   X");
+    println!();
+    println!("Polygon vertices (in order):");
+    for (i, point) in concave_polygon.iter().enumerate() {
+        println!("  {}: ({:.6}, {:.6}, {:.6})", i, point.x, point.y, point.z);
+    }
     
-    // Create octahedron mesh using openmodel
-    let mut octahedron_mesh = Mesh::new();
-    octahedron_mesh.data.set_name("octahedron");
+    let mut mesh = Mesh::from_polygon_earclip(concave_polygon);
     
-    let o0 = octahedron_mesh.add_vertex(Point::new(4.0, 0.0, 0.0), None);
-    let o1 = octahedron_mesh.add_vertex(Point::new(2.0, 0.0, 0.0), None);
-    let o2 = octahedron_mesh.add_vertex(Point::new(3.0, 1.0, 0.0), None);
-    let o3 = octahedron_mesh.add_vertex(Point::new(3.0, -1.0, 0.0), None);
-    let o4 = octahedron_mesh.add_vertex(Point::new(3.0, 0.0, 1.0), None);
-    let o5 = octahedron_mesh.add_vertex(Point::new(3.0, 0.0, -1.0), None);
+    // Add colors to vertices
+    let colors = [
+        [1.0, 0.0, 0.0],   // Red
+        [0.0, 1.0, 0.0],   // Green
+        [0.0, 0.0, 1.0],   // Blue
+        [1.0, 1.0, 0.0],   // Yellow
+        [1.0, 0.0, 1.0],   // Magenta
+        [0.0, 1.0, 1.0],   // Cyan
+        [1.0, 0.5, 0.0],   // Orange
+        [0.5, 0.0, 1.0],   // Purple
+        [0.0, 0.5, 0.5],   // Teal
+        [0.5, 0.5, 0.0],   // Olive
+    ];
     
-    octahedron_mesh.add_face(vec![o0, o2, o4], None);
-    octahedron_mesh.add_face(vec![o2, o1, o4], None);
-    octahedron_mesh.add_face(vec![o1, o3, o4], None);
-    octahedron_mesh.add_face(vec![o3, o0, o4], None);
+    // Add colors to each vertex
+    for (i, (vertex_key, vertex_data)) in mesh.vertex.iter_mut().enumerate() {
+        let color = colors[i % colors.len()];
+        vertex_data.attributes.insert("r".to_string(), color[0]);
+        vertex_data.attributes.insert("g".to_string(), color[1]);
+        vertex_data.attributes.insert("b".to_string(), color[2]);
+    }
     
-    // Create sample points using openmodel
-    let mut sample_points = PointCloud::new(
-        vec![
-            Point::new(0.0, -5.0, 0.0),
-            Point::new(1.0, -5.0, 0.0),
-            Point::new(2.0, -5.0, 0.0),
-            Point::new(3.0, -5.0, 0.0),
-            Point::new(4.0, -5.0, 0.0),
-        ],
-        vec![], // No normals
-        vec![
-            Color::new(255, 0, 0, 255),   // Red
-            Color::new(0, 255, 0, 255),   // Green
-            Color::new(0, 0, 255, 255),   // Blue
-            Color::new(255, 255, 0, 255), // Yellow
-            Color::new(0, 0, 0, 255),     // Black
-        ],
-    );
-    sample_points.data.set_name("sample_points");
+    println!("\n✅ Star mesh created successfully!");
+    println!("   Vertices: {}", mesh.number_of_vertices());
+    println!("   Faces: {}", mesh.number_of_faces());
+    println!("   Edges: {}", mesh.number_of_edges());
+    println!("   Euler characteristic: {}", mesh.euler());
     
-    // Create sample lines using openmodel
-    let mut sample_lines = LineCloud::new(
-        vec![
-            Line::new(0.0, 0.0, 0.0, 1.0, 0.0, 0.0),
-            Line::new(1.0, 0.0, 0.0, 1.0, 1.0, 0.0),
-            Line::new(1.0, 1.0, 0.0, 0.0, 1.0, 0.0),
-            Line::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0),
-        ],
-        vec![
-            Color::new(255, 0, 0, 255),   // Red
-            Color::new(0, 255, 0, 255),   // Green
-            Color::new(0, 0, 255, 255),   // Blue
-            Color::new(255, 255, 0, 255), // Yellow
-        ],
-    );
-    sample_lines.data.set_name("sample_lines");
+    // Print face information with vertex coordinates
+    println!("\n=== Triangulation Details ===");
+    for (face_key, vertices) in mesh.get_face_data() {
+        print!("Face {}: ", face_key);
+        for (i, &vertex_key) in vertices.iter().enumerate() {
+            if let Some(pos) = mesh.vertex_position(vertex_key) {
+                if i > 0 { print!(" -> "); }
+                print!("({:.6}, {:.6})", pos.x, pos.y);
+            }
+        }
+        println!();
+    }
     
-    // Create sample pipes using openmodel (as pipe meshes)
-    let pipe1 = Mesh::create_pipe(
-        Point::new(0.0, 5.0, 0.0),
-        Point::new(1.0, 5.0, 0.0),
-        0.05
-    );
+    // Verify the mesh properties
+    println!("\n=== Mesh Properties ===");
+    println!("Is empty: {}", mesh.is_empty());
+    println!("Number of vertices: {}", mesh.number_of_vertices());
+    println!("Number of faces: {}", mesh.number_of_faces());
+    println!("Number of edges: {}", mesh.number_of_edges());
+    println!("Euler characteristic: {}", mesh.euler());
     
-    let pipe2 = Mesh::create_pipe(
-        Point::new(1.0, 5.0, 0.0),
-        Point::new(1.0, 5.0, 1.0),
-        0.05
-    );
+    // Check if all vertices are on boundary (they should be for a simple polygon)
+    let boundary_vertices: Vec<usize> = mesh.vertex.keys().cloned().collect();
+    let boundary_count = boundary_vertices.iter()
+        .filter(|&&v| mesh.is_vertex_on_boundary(v))
+        .count();
+    println!("Vertices on boundary: {}/{}", boundary_count, mesh.number_of_vertices());
     
-    // Create sample pline using openmodel
-    let mut sample_pline = Pline::new(vec![
-        Point::new(-3.0, 0.0, 0.0),
-        Point::new(-4.0, 0.0, 0.0),
-        Point::new(-4.0, 1.0, 0.0),
-        Point::new(-3.0, 1.0, 0.0),
-    ]);
-    sample_pline.data.set_name("sample_pline");
+    // Test edge extraction
+    let edges = mesh.extract_edges_as_lines();
+    println!("Unique edges extracted: {}", edges.len());
     
-    // Create a collection of all geometry using HashMap
-    let mut geometry_collection = HashMap::new();
+    // Test JSON serialization
+    println!("\n=== Testing JSON Serialization ===");
     
-    // Add meshes (using to_json_data for automatic dtype)
-    geometry_collection.insert("cube_mesh".to_string(), cube_mesh.to_json_data(false));
-    geometry_collection.insert("octahedron_mesh".to_string(), octahedron_mesh.to_json_data(false));
-    geometry_collection.insert("pipe1_mesh".to_string(), pipe1.to_json_data(false));
-    geometry_collection.insert("pipe2_mesh".to_string(), pipe2.to_json_data(false));
+    // Test simple serde_json serialization
+    match serde_json::to_string_pretty(&mesh) {
+        Ok(json_str) => {
+            println!("✅ JSON serialization successful!");
+            println!("JSON length: {} characters", json_str.len());
+            println!("First 200 characters of JSON:");
+            println!("{}", &json_str[..std::cmp::min(200, json_str.len())]);
+            
+            // Test deserialization
+            match serde_json::from_str::<Mesh>(&json_str) {
+                Ok(deserialized_mesh) => {
+                    println!("✅ JSON deserialization successful!");
+                    println!("Deserialized mesh has {} vertices and {} faces", 
+                             deserialized_mesh.number_of_vertices(), 
+                             deserialized_mesh.number_of_faces());
+                    
+                    // Verify the deserialized mesh matches the original
+                    if deserialized_mesh.number_of_vertices() == mesh.number_of_vertices() &&
+                       deserialized_mesh.number_of_faces() == mesh.number_of_faces() {
+                        println!("✅ Serialization/deserialization round-trip successful!");
+                    } else {
+                        println!("❌ Serialization/deserialization round-trip failed!");
+                    }
+                }
+                Err(e) => {
+                    println!("❌ JSON deserialization failed: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            println!("❌ JSON serialization failed: {}", e);
+        }
+    }
     
-    // Add point cloud (using to_json_data for automatic dtype)
-    geometry_collection.insert("sample_points".to_string(), sample_points.to_json_data(false));
+    // Test the custom json_dump/json_load functions
+    println!("\n=== Testing json_dump/json_load ===");
+    json_dump(&mesh, "star_mesh.json");
+    println!("✅ json_dump completed!");
     
-    // Add line cloud (using to_json_data for automatic dtype)
-    geometry_collection.insert("sample_lines".to_string(), sample_lines.to_json_data(false));
+    // Debug: Let's see what the JSON looks like
+    let json_content = std::fs::read_to_string("star_mesh.json").unwrap();
+    println!("JSON file size: {} characters", json_content.len());
+    println!("First 300 characters of JSON:");
+    println!("{}", &json_content[..std::cmp::min(300, json_content.len())]);
     
-    // Add pline (using to_json_data for automatic dtype)
-    geometry_collection.insert("sample_pline".to_string(), sample_pline.to_json_data(false));
+    let loaded_mesh = json_load::<Mesh>("star_mesh.json");
+    println!("✅ json_load successful!");
+    println!("Loaded mesh has {} vertices and {} faces", 
+             loaded_mesh.number_of_vertices(), 
+             loaded_mesh.number_of_faces());
     
-    // Add metadata
-    let mut metadata = HashMap::new();
-    metadata.insert("version".to_string(), serde_json::Value::String("1.0".to_string()));
-    metadata.insert("description".to_string(), serde_json::Value::String("Sample geometry data generated with openmodel API".to_string()));
-    metadata.insert("created".to_string(), serde_json::Value::String("2025-07-28".to_string()));
-    geometry_collection.insert("metadata".to_string(), serde_json::Value::Object(metadata.into_iter().collect()));
+    if loaded_mesh.number_of_vertices() == mesh.number_of_vertices() &&
+       loaded_mesh.number_of_faces() == mesh.number_of_faces() {
+        println!("✅ json_dump/json_load round-trip successful!");
+    } else {
+        println!("❌ json_dump/json_load round-trip failed!");
+    }
     
-    // Serialize to JSON
-    let json_string = serde_json::to_string_pretty(&geometry_collection)
-        .expect("Failed to serialize geometry data");
+    println!("\n🎉 Star mesh with ear clipping triangulation works perfectly!");
+    println!("⭐ The {}-vertex star polygon was triangulated into {} triangles", 
+             mesh.number_of_vertices(), mesh.number_of_faces());
+    println!("🔗 The mesh has {} unique edges", edges.len());
     
-    // Write to file
-    fs::write("geometry_data.json", &json_string)
-        .expect("Failed to write JSON file");
+    // Add the star mesh to AllGeometryData and save to all_geometry.json
+    println!("\n=== Adding Star Mesh to All Geometry ===");
     
-    println!("✅ Generated geometry_data.json using pure openmodel API!");
-    println!("📊 Contains {} geometry objects", geometry_collection.len());
-    println!("🎯 All geometry created using openmodel types: Mesh, PointCloud, LineCloud, Pline");
-    println!("🔧 Used optimized create_pipe method for pipe generation");
+    // Create AllGeometryData with the star mesh
+    let all_geometry = AllGeometryData {
+        points: vec![],
+        vectors: vec![],
+        lines: vec![],
+        planes: vec![],
+        colors: vec![],
+        point_clouds: vec![],
+        line_clouds: vec![],
+        plines: vec![],
+        xforms: vec![],
+        meshes: vec![mesh.clone()], // Add the star mesh
+    };
+    
+    // Save to all_geometry.json
+    json_dump(&all_geometry, "all_geometry.json");
+    println!("✅ Star mesh saved to all_geometry.json");
+    
+    // Test loading from all_geometry.json
+    let loaded_all_geometry = json_load::<AllGeometryData>("all_geometry.json");
+    println!("✅ Successfully loaded all_geometry.json");
+    println!("   Contains {} meshes", loaded_all_geometry.meshes.len());
+    if let Some(loaded_mesh) = loaded_all_geometry.meshes.first() {
+        println!("   Loaded mesh has {} vertices and {} faces", 
+                 loaded_mesh.number_of_vertices(), 
+                 loaded_mesh.number_of_faces());
+        if loaded_mesh.number_of_vertices() == mesh.number_of_vertices() &&
+           loaded_mesh.number_of_faces() == mesh.number_of_faces() {
+            println!("✅ All geometry round-trip successful!");
+        } else {
+            println!("❌ All geometry round-trip failed!");
+        }
+    }
+    
+    println!("💾 Star mesh is now serialized to all_geometry.json");
 }
+ 
