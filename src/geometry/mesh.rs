@@ -24,7 +24,7 @@ pub enum NormalWeighting {
 /// connectivity is stored using a halfedge data structure. Each edge is split
 /// into two halfedges with opposite orientations, enabling efficient topological
 /// queries and mesh operations.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Mesh {
     /// Halfedge connectivity: halfedge[u][v] represents the halfedge from vertex u to vertex v
     pub halfedge: HashMap<usize, HashMap<usize, Option<usize>>>,
@@ -57,7 +57,7 @@ pub struct VertexData {
     pub x: f64,
     pub y: f64, 
     pub z: f64,
-    /// Custom attributes for the vertex
+    /// Vertex attributes organized by type
     pub attributes: HashMap<String, f64>,
 }
 
@@ -83,7 +83,57 @@ impl VertexData {
         self.y = point.y;
         self.z = point.z;
     }
+    
+    // Convenience methods for common attributes
+    pub fn color(&self) -> [f64; 3] {
+        [
+            self.attributes.get("r").copied().unwrap_or(0.5),
+            self.attributes.get("g").copied().unwrap_or(0.5),
+            self.attributes.get("b").copied().unwrap_or(0.5),
+        ]
+    }
+    
+    pub fn set_color(&mut self, r: f64, g: f64, b: f64) {
+        self.attributes.insert("r".to_string(), r);
+        self.attributes.insert("g".to_string(), g);
+        self.attributes.insert("b".to_string(), b);
+    }
+    
+    pub fn normal(&self) -> Option<[f64; 3]> {
+        let nx = self.attributes.get("nx")?;
+        let ny = self.attributes.get("ny")?;
+        let nz = self.attributes.get("nz")?;
+        Some([*nx, *ny, *nz])
+    }
+    
+    pub fn set_normal(&mut self, nx: f64, ny: f64, nz: f64) {
+        self.attributes.insert("nx".to_string(), nx);
+        self.attributes.insert("ny".to_string(), ny);
+        self.attributes.insert("nz".to_string(), nz);
+    }
+    
+    pub fn tex_coords(&self) -> Option<[f64; 2]> {
+        let u = self.attributes.get("u")?;
+        let v = self.attributes.get("v")?;
+        Some([*u, *v])
+    }
+    
+    pub fn set_tex_coords(&mut self, u: f64, v: f64) {
+        self.attributes.insert("u".to_string(), u);
+        self.attributes.insert("v".to_string(), v);
+    }
+    
+    // Generic attribute access
+    pub fn get_attribute(&self, name: &str) -> Option<f64> {
+        self.attributes.get(name).copied()
+    }
+    
+    pub fn set_attribute(&mut self, name: &str, value: f64) {
+        self.attributes.insert(name.to_string(), value);
+    }
 }
+
+
 
 impl Default for Mesh {
     fn default() -> Self {
@@ -2045,162 +2095,27 @@ impl Mesh {
 // JSON serialization support
 impl JsonSerializable for Mesh {
     fn to_json_value(&self) -> serde_json::Value {
-        self.to_json_data(false)
+        // Use direct serialization for consistency with struct definition
+        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
     }
 }
 
 impl FromJsonData for Mesh {
     fn from_json_data(data: &serde_json::Value) -> Option<Self> {
-        println!("DEBUG: Attempting to deserialize Mesh from JSON data");
-        println!("DEBUG: Data keys: {:?}", data.as_object().map(|obj| obj.keys().collect::<Vec<_>>()));
-        
-        // Try to deserialize directly first (for direct serde_json format)
+        // Try direct deserialization first
         if let Ok(mesh) = serde_json::from_value(data.clone()) {
-            println!("DEBUG: Direct deserialization successful");
             return Some(mesh);
-        } else {
-            println!("DEBUG: Direct deserialization failed");
         }
         
-        // If that fails, try COMPAS format (extract from data field)
+        // Try COMPAS format (extract from data field)
         if let Some(data_obj) = data.get("data") {
-            println!("DEBUG: Found 'data' field, attempting to deserialize from it");
             if let Ok(mesh) = serde_json::from_value(data_obj.clone()) {
-                println!("DEBUG: COMPAS format deserialization successful");
                 return Some(mesh);
-            } else {
-                println!("DEBUG: COMPAS format deserialization failed");
             }
-        } else {
-            println!("DEBUG: No 'data' field found");
         }
         
-        println!("DEBUG: All deserialization attempts failed");
         None
     }
 }
 
-// Add Deserialize implementation for Mesh
-impl<'de> serde::Deserialize<'de> for Mesh {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::{self, MapAccess, Visitor};
-        use std::fmt;
-
-        #[derive(Deserialize)]
-        #[serde(field_identifier, rename_all = "snake_case")]
-        enum Field {
-            Halfedge,
-            Vertex,
-            Face,
-            Facedata,
-            Edgedata,
-            DefaultVertexAttributes,
-            DefaultFaceAttributes,
-            DefaultEdgeAttributes,
-            MaxVertex,
-            MaxFace,
-            Data,
-        }
-
-        struct MeshVisitor;
-
-        impl<'de> Visitor<'de> for MeshVisitor {
-            type Value = Mesh;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct Mesh")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> Result<Mesh, V::Error>
-            where
-                V: MapAccess<'de>,
-            {
-                let mut halfedge: Option<HashMap<usize, HashMap<usize, Option<usize>>>> = None;
-                let mut vertex: Option<HashMap<usize, VertexData>> = None;
-                let mut face: Option<HashMap<usize, Vec<usize>>> = None;
-                let mut facedata: Option<HashMap<usize, HashMap<String, f64>>> = None;
-                let mut edgedata: Option<HashMap<(usize, usize), HashMap<String, f64>>> = None;
-                let mut default_vertex_attributes: Option<HashMap<String, f64>> = None;
-                let mut default_face_attributes: Option<HashMap<String, f64>> = None;
-                let mut default_edge_attributes: Option<HashMap<String, f64>> = None;
-                let mut max_vertex: Option<usize> = None;
-                let mut max_face: Option<usize> = None;
-                let mut data: Option<Data> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        Field::Halfedge => {
-                            halfedge = Some(map.next_value()?);
-                        }
-                        Field::Vertex => {
-                            vertex = Some(map.next_value()?);
-                        }
-                        Field::Face => {
-                            face = Some(map.next_value()?);
-                        }
-                        Field::Facedata => {
-                            facedata = Some(map.next_value()?);
-                        }
-                        Field::Edgedata => {
-                            edgedata = Some(map.next_value()?);
-                        }
-                        Field::DefaultVertexAttributes => {
-                            default_vertex_attributes = Some(map.next_value()?);
-                        }
-                        Field::DefaultFaceAttributes => {
-                            default_face_attributes = Some(map.next_value()?);
-                        }
-                        Field::DefaultEdgeAttributes => {
-                            default_edge_attributes = Some(map.next_value()?);
-                        }
-                        Field::MaxVertex => {
-                            max_vertex = Some(map.next_value()?);
-                        }
-                        Field::MaxFace => {
-                            max_face = Some(map.next_value()?);
-                        }
-                        Field::Data => {
-                            data = Some(map.next_value()?);
-                        }
-                    }
-                }
-
-                let halfedge = halfedge.ok_or_else(|| de::Error::missing_field("halfedge"))?;
-                let vertex = vertex.ok_or_else(|| de::Error::missing_field("vertex"))?;
-                let face = face.ok_or_else(|| de::Error::missing_field("face"))?;
-                let facedata = facedata.unwrap_or_else(HashMap::new);
-                let edgedata = edgedata.unwrap_or_else(HashMap::new);
-                let default_vertex_attributes = default_vertex_attributes.unwrap_or_else(HashMap::new);
-                let default_face_attributes = default_face_attributes.unwrap_or_else(HashMap::new);
-                let default_edge_attributes = default_edge_attributes.unwrap_or_else(HashMap::new);
-                let max_vertex = max_vertex.unwrap_or(0);
-                let max_face = max_face.unwrap_or(0);
-                let data = data.unwrap_or_else(Data::new);
-
-                Ok(Mesh {
-                    halfedge,
-                    vertex,
-                    face,
-                    facedata,
-                    edgedata,
-                    default_vertex_attributes,
-                    default_face_attributes,
-                    default_edge_attributes,
-                    max_vertex,
-                    max_face,
-                    data,
-                })
-            }
-        }
-
-        const FIELDS: &'static [&'static str] = &[
-            "halfedge", "vertex", "face", "facedata", "edgedata",
-            "default_vertex_attributes", "default_face_attributes", "default_edge_attributes",
-            "max_vertex", "max_face", "data"
-        ];
-        deserializer.deserialize_struct("Mesh", FIELDS, MeshVisitor)
-    }
-}
+// Simple automatic serialization/deserialization with derive macros

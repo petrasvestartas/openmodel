@@ -2,7 +2,7 @@ use crate::geometry::Point;
 use crate::geometry::Vector;
 use crate::geometry::Plane;
 use crate::geometry::Mesh;
-use crate::common::{JsonSerializable, FromJsonData, HasJsonData};
+use crate::common::{FromJsonData, HasJsonData};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use crate::common::Data;

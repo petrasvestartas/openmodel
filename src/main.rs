@@ -93,9 +93,7 @@ fn main() {
     // Add colors to each vertex
     for (i, (vertex_key, vertex_data)) in mesh.vertex.iter_mut().enumerate() {
         let color = colors[i % colors.len()];
-        vertex_data.attributes.insert("r".to_string(), color[0]);
-        vertex_data.attributes.insert("g".to_string(), color[1]);
-        vertex_data.attributes.insert("b".to_string(), color[2]);
+        vertex_data.set_color(color[0], color[1], color[2]);
     }
     
     println!("\n✅ Star mesh created successfully!");

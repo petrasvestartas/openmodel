@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
-use crate::common::{JsonSerializable, FromJsonData, Data, HasJsonData};
+use crate::common::{FromJsonData, Data, HasJsonData};
 use serde_json::Value;
 
 /// A color in RGBA format

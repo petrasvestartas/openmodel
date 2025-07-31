@@ -40,8 +40,8 @@ impl Serialize for Data {
         state.serialize_field("name", &self.name)?; // Serialize as string
         state.serialize_field("guid", &self.guid)?;
         state.serialize_field("parent", &self.parent)?;
-        state.serialize_field("adjacency_indices", &self.adjacency_indices)?;
-        state.serialize_field("adjacency_types", &self.adjacency_types)?;
+        state.serialize_field("adjacencyindices", &self.adjacency_indices)?;
+        state.serialize_field("adjacencytypes", &self.adjacency_types)?;
         state.serialize_field("transformation", &self.transformation)?;
         state.serialize_field("color", &self.color)?;
         state.serialize_field("thickness", &self.thickness)?;
@@ -59,7 +59,7 @@ impl<'de> Deserialize<'de> for Data {
         use std::fmt;
 
         #[derive(Deserialize)]
-        #[serde(field_identifier, rename_all = "snake_case")]
+        #[serde(field_identifier, rename_all = "lowercase")]
         enum Field {
             Name,
             Guid,

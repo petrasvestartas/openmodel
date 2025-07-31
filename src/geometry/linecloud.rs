@@ -1,5 +1,5 @@
 use crate::geometry::{Line, Color, Xform, Mesh};
-use crate::common::{JsonSerializable, FromJsonData, HasJsonData, Data};
+use crate::common::{FromJsonData, HasJsonData, Data};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::fmt;
