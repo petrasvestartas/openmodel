@@ -1,5 +1,4 @@
 use serde_json::Value;
-use std::ops::Index;
 use std::fmt;
 
 /// Smart JSON data wrapper that allows direct access like Python COMPAS
@@ -49,15 +48,15 @@ impl JsonData {
     /// Iterate over array items
     pub fn iter(&self) -> JsonArrayIter<'_> {
         match &self.value {
-            Value::Array(arr) => JsonArrayIter { items: arr.iter(), index: 0 },
-            _ => JsonArrayIter { items: [].iter(), index: 0 },
+            Value::Array(arr) => JsonArrayIter { items: Some(arr.iter()), index: 0 },
+            _ => JsonArrayIter { items: None, index: 0 },
         }
     }
 }
 
 /// Iterator for JsonData arrays
 pub struct JsonArrayIter<'a> {
-    items: std::slice::Iter<'a, Value>,
+    items: Option<std::slice::Iter<'a, Value>>,
     index: usize,
 }
 
@@ -65,26 +64,18 @@ impl<'a> Iterator for JsonArrayIter<'a> {
     type Item = (usize, JsonData);
     
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(item) = self.items.next() {
-            let result = (self.index, JsonData::new(item.clone()));
-            self.index += 1;
-            Some(result)
-        } else {
-            None
+        if let Some(ref mut iter) = self.items {
+            if let Some(item) = iter.next() {
+                let result = (self.index, JsonData::new(item.clone()));
+                self.index += 1;
+                return Some(result);
+            }
         }
+        None
     }
 }
 
-/// Index access like Python: data["key"] or data[0]
-impl Index<&str> for JsonData {
-    type Output = JsonData;
-    
-    fn index(&self, _key: &str) -> &Self::Output {
-        // This is a bit tricky - we need to return a reference but we're creating new JsonData
-        // For now, let's use a different approach
-        unreachable!("Use get() method instead")
-    }
-}
+// Note: Index trait removed - use get() method instead for safe access
 
 /// Better approach: get() method that returns JsonData
 impl JsonData {

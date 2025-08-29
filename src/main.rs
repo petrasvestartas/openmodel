@@ -141,7 +141,7 @@ fn make_point_cloud() -> PointCloud {
     let mut colors = Vec::new();
     
     // Generate 10x10x10 = 1,000 points within 10x10x10 bounds
-    let grid_size = 10;
+    let grid_size = 50;
     let bound = 1.0f32; // -5 to +5 = 10 units
     let step = (2.0 * bound) / (grid_size as f32 - 1.0);
     
@@ -249,7 +249,7 @@ fn make_arrows() -> Vec<Arrow> {
 }
 
 fn main() {
-    
+    println!("Starting geometry generation...");
     
     let star = make_star_mesh();
     let _sphere = Mesh::create_unit_sphere_high_res();
@@ -276,8 +276,11 @@ fn main() {
         sphere_mesh_index: None,
     };
 
-    // Write deterministically next to this Cargo package (not dependent on current working dir)
-    let out_path = format!("{}/all_geometry.json", env!("CARGO_MANIFEST_DIR"));
+    // Write directly to wink data folder
+    // let out_path = format!("{}/all_geometry.json", env!("CARGO_MANIFEST_DIR"));
+    let out_path = format!("{}/wink/data/all_geometry.json", env!("CARGO_MANIFEST_DIR").replace("/openmodel", ""));
+    println!("Writing to: {}", out_path);
     let json_string = serde_json::to_string_pretty(&all_geometry).unwrap();
     std::fs::write(&out_path, json_string).unwrap();
+    println!("File written successfully!");
 }
