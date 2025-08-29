@@ -248,7 +248,7 @@ fn make_arrows() -> Vec<Arrow> {
     arrows
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting geometry generation...");
     
     let star = make_star_mesh();
@@ -277,10 +277,24 @@ fn main() {
     };
 
     // Write directly to wink data folder
-    // let out_path = format!("{}/all_geometry.json", env!("CARGO_MANIFEST_DIR"));
-    let out_path = format!("{}/wink/data/all_geometry.json", env!("CARGO_MANIFEST_DIR").replace("/openmodel", ""));
-    println!("Writing to: {}", out_path);
-    let json_string = serde_json::to_string_pretty(&all_geometry).unwrap();
-    std::fs::write(&out_path, json_string).unwrap();
+    let parent_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let data_dir = format!("{}/wink/data", parent_dir.display());
+    std::fs::create_dir_all(&data_dir)?;
+    let output_path = format!("{}/all_geometry.json", data_dir);
+    println!("Writing to: {}", output_path);
+    let json_string = serde_json::to_string_pretty(&all_geometry)?;
+    std::fs::write(&output_path, json_string)?;
+    
+    // Create minimal metadata file for efficient change detection
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    
+    let metadata_path = format!("{}/geometry_metadata.json", data_dir);
+    std::fs::write(&metadata_path, timestamp.to_string())?;
+    
     println!("File written successfully!");
+    
+    Ok(())
 }
