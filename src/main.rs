@@ -172,7 +172,7 @@ fn make_point_cloud() -> PointCloud {
     
     // Apply a transformation: translate by (2, 0, 1) and rotate 45 degrees around Z-axis
     let cos_45 = 0.7071067811865476f32; // cos(45°)
-    let sin_45 = 0.7071067811865475f32; // sin(45°)
+    let sin_45 = 0.707_106_77_f32; // sin(45°)
     
     point_cloud.xform = Xform::from_matrix([
         cos_45*0.0+1.0, -sin_45*0.0, 0.0, 0.0,  // Rotate + translate X
@@ -280,8 +280,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parent_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let data_dir = format!("{}/wink/data", parent_dir.display());
     std::fs::create_dir_all(&data_dir)?;
-    let output_path = format!("{}/all_geometry.json", data_dir);
-    println!("Writing to: {}", output_path);
+    let output_path = format!("{data_dir}/session.json");
+    println!("Writing to: {output_path}");
     let json_string = serde_json::to_string_pretty(&all_geometry)?;
     std::fs::write(&output_path, json_string)?;
     
@@ -291,7 +291,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap()
         .as_secs();
     
-    let metadata_path = format!("{}/geometry_metadata.json", data_dir);
+    let metadata_path = format!("{data_dir}/session_metadata.json");
     std::fs::write(&metadata_path, timestamp.to_string())?;
     
     println!("File written successfully!");

@@ -12,7 +12,7 @@ fn test_earclip_polygon_triangle() {
         Point::new(1.0, 1.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(points);
+    let mesh = Mesh::from_polygons(vec![points], None);
     assert_eq!(mesh.number_of_vertices(), 3);
     assert_eq!(mesh.number_of_faces(), 1);
     // Expected triangulation: [[0, 1, 2]]
@@ -28,7 +28,7 @@ fn test_earclip_polygon_square() {
         Point::new(0.0, 1.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(points);
+    let mesh = Mesh::from_polygons(vec![points], None);
     assert_eq!(mesh.number_of_vertices(), 4);
     assert_eq!(mesh.number_of_faces(), 2);
     // Expected triangulation: [[3, 0, 1], [1, 2, 3]]
@@ -46,7 +46,7 @@ fn test_earclip_polygon_when_reversed() {
         Point::new(0.0, 10.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(points);
+    let mesh = Mesh::from_polygons(vec![points], None);
     assert_eq!(mesh.number_of_vertices(), 6);
     assert_eq!(mesh.number_of_faces(), 4); // n-2 triangles for n vertices
     // Expected triangulation: [[5, 0, 1], [2, 3, 4], [5, 1, 2], [2, 4, 5]]
@@ -64,7 +64,7 @@ fn test_earclip_polygon_concave() {
         Point::new(0.0, 2.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(points);
+    let mesh = Mesh::from_polygons(vec![points], None);
     assert_eq!(mesh.number_of_vertices(), 6);
     assert_eq!(mesh.number_of_faces(), 4); // n-2 triangles for n vertices
 }
@@ -80,7 +80,7 @@ fn test_earclip_polygon_pentagon() {
         Point::new(0.309, -0.951, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(points);
+    let mesh = Mesh::from_polygons(vec![points], None);
     assert_eq!(mesh.number_of_vertices(), 5);
     assert_eq!(mesh.number_of_faces(), 3); // n-2 triangles for n vertices
 }
@@ -89,7 +89,7 @@ fn test_earclip_polygon_pentagon() {
 fn test_earclip_polygon_empty() {
     // Empty polygon should return empty mesh
     let empty = vec![];
-    let mesh = Mesh::from_polygon_earclip(empty);
+    let mesh = Mesh::from_polygons(vec![empty], None);
     assert_eq!(mesh.number_of_vertices(), 0);
     assert_eq!(mesh.number_of_faces(), 0);
 }
@@ -98,7 +98,7 @@ fn test_earclip_polygon_empty() {
 fn test_earclip_polygon_degenerate() {
     // Degenerate cases
     let single = vec![Point::new(0.0, 0.0, 0.0)];
-    let mesh = Mesh::from_polygon_earclip(single);
+    let mesh = Mesh::from_polygons(vec![single], None);
     assert_eq!(mesh.number_of_vertices(), 0);
     assert_eq!(mesh.number_of_faces(), 0);
     
@@ -106,7 +106,7 @@ fn test_earclip_polygon_degenerate() {
         Point::new(0.0, 0.0, 0.0),
         Point::new(1.0, 0.0, 0.0),
     ];
-    let mesh = Mesh::from_polygon_earclip(two);
+    let mesh = Mesh::from_polygons(vec![two], None);
     assert_eq!(mesh.number_of_vertices(), 0);
     assert_eq!(mesh.number_of_faces(), 0);
 }

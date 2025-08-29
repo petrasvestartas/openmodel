@@ -33,7 +33,7 @@ fn test_concave_polygon_earclip() {
         Point::new(0.4, 0.0, 0.0),    // Bottom edge
     ];
     
-    let mesh = Mesh::from_polygon_earclip(concave_polygon);
+    let mesh = Mesh::from_polygons(vec![concave_polygon], None);
     
     // Verify mesh properties
     assert!(!mesh.is_empty());
@@ -62,7 +62,7 @@ fn test_simple_triangle_earclip() {
         Point::new(0.0, 1.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(triangle);
+    let mesh = Mesh::from_polygons(vec![triangle], None);
     
     assert!(!mesh.is_empty());
     assert_eq!(mesh.number_of_vertices(), 3);
@@ -81,7 +81,7 @@ fn test_square_earclip() {
         Point::new(0.0, 1.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(square);
+    let mesh = Mesh::from_polygons(vec![square], None);
     
     assert!(!mesh.is_empty());
     assert_eq!(mesh.number_of_vertices(), 4);
@@ -101,7 +101,7 @@ fn test_pentagon_earclip() {
         Point::new(0.0, 0.4, 0.0),   // Bottom-left
     ];
     
-    let mesh = Mesh::from_polygon_earclip(pentagon);
+    let mesh = Mesh::from_polygons(vec![pentagon], None);
     
     assert!(!mesh.is_empty());
     assert_eq!(mesh.number_of_vertices(), 5);
@@ -130,7 +130,7 @@ fn test_concave_polygon_with_holes() {
         Point::new(0.5, 0.0, 0.0),    // Bottom edge
     ];
     
-    let mesh = Mesh::from_polygon_earclip(complex_polygon);
+    let mesh = Mesh::from_polygons(vec![complex_polygon], None);
     
     assert!(!mesh.is_empty());
     assert_eq!(mesh.number_of_vertices(), 14);
@@ -162,7 +162,7 @@ fn test_cross_concave_polygon_earclip() {
         Point::new(0.3, 0.3, 0.0),    // Left inner
     ];
     
-    let mesh = Mesh::from_polygon_earclip(cross_polygon);
+    let mesh = Mesh::from_polygons(vec![cross_polygon], None);
     
     // Verify mesh properties
     assert!(!mesh.is_empty());
@@ -192,7 +192,7 @@ fn test_edge_extraction() {
         Point::new(0.0, 1.0, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(concave_polygon);
+    let mesh = Mesh::from_polygons(vec![concave_polygon], None);
     
     // Extract edges as lines
     let edges = mesh.extract_edges_as_lines();
@@ -216,7 +216,7 @@ fn test_mesh_properties() {
         Point::new(0.0, 0.4, 0.0),
     ];
     
-    let mesh = Mesh::from_polygon_earclip(concave_polygon);
+    let mesh = Mesh::from_polygons(vec![concave_polygon], None);
     
     // Test vertex positions
     for (vertex_key, vertex_data) in &mesh.vertex {
