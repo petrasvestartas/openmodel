@@ -1,12 +1,12 @@
-use crate::geometry::{Point, Vector, Color, Xform};
+use crate::primitives::{Point, Vector, Color, Xform};
 use crate::common::{FromJsonData, HasJsonData, Data};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::fmt;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct PointCloud {
-    /// The collection of points.
+    /// The collection of point positions (simple points without transformation data).
     pub points: Vec<Point>,
 
     /// The collection of normals.
@@ -15,7 +15,7 @@ pub struct PointCloud {
     /// The collection of colors.
     pub colors: Vec<Color>,
 
-    /// The transformation matrix.
+    /// The transformation matrix for the entire point cloud.
     pub xform: Xform,
 
     /// Associated data - guid and name.
@@ -27,17 +27,14 @@ impl PointCloud {
     ///
     /// # Arguments
     ///
-    /// * `points` - The collection of points.
+    /// * `points` - The collection of point positions.
     /// * `normals` - The collection of normals.
     /// * `colors` - The collection of colors.
-    /// * `xform` - The transformation matrix.
     ///
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Point;
-    /// use openmodel::geometry::Vector;
-    /// use openmodel::geometry::Color;
+    /// use openmodel::primitives::{Point, Vector, Color};
     /// use openmodel::geometry::PointCloud;
     /// let points = vec![Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0)];
     /// let normals = vec![Vector::new(0.0, 0.0, 1.0), Vector::new(0.0, 1.0, 0.0), Vector::new(1.0, 0.0, 0.0)];
@@ -178,6 +175,23 @@ impl Sub<&Vector> for PointCloud {
     }
 }
 
+// Custom Serialize implementation for simple format compatible with wink
+impl Serialize for PointCloud {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("PointCloud", 5)?;
+        state.serialize_field("points", &self.points)?;
+        state.serialize_field("normals", &self.normals)?;
+        state.serialize_field("colors", &self.colors)?;
+        state.serialize_field("xform", &self.xform)?;
+        state.serialize_field("data", &self.data)?;
+        state.end()
+    }
+}
+
 impl fmt::Display for PointCloud {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -196,7 +210,8 @@ impl HasJsonData for PointCloud {
     fn to_json_data(&self, minimal: bool) -> serde_json::Value {
         let geometric_data = serde_json::json!({
             "points": self.points,
-            "colors": self.colors
+            "colors": self.colors,
+            "xform": self.xform
         });
         self.data.to_json_data("openmodel.geometry/PointCloud", geometric_data, minimal)
     }

@@ -10,7 +10,7 @@ use std::fmt;
 // use std::f64::consts::PI;  // Not needed
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Line {
+pub struct Arrow {
     /// The x coordinate of the start point.
     pub x0: f32,
     /// The y coordinate of the start point.
@@ -23,15 +23,15 @@ pub struct Line {
     pub y1: f32,
     /// The z coordinate of the end point.
     pub z1: f32,
-    /// The data associated with the line (includes color and thickness).
+    /// The data associated with the Arrow (includes color and thickness).
     pub data: Data,
     /// Mesh for visualization (pipe)
     #[serde(skip)]
     pub mesh: Option<Mesh>,
 }
 
-impl Line{
-    /// Creates a new `Line` with default `Data`.
+impl Arrow{
+    /// Creates a new `Arrow` with default `Data`.
     ///
     /// # Arguments
     ///
@@ -45,30 +45,30 @@ impl Line{
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 0.0);
-    /// assert_eq!(line.z0, 0.0);
-    /// assert_eq!(line.x1, 0.0);
-    /// assert_eq!(line.y1, 0.0);
-    /// assert_eq!(line.z1, 1.0);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// assert_eq!(Arrow.x0, 0.0);
+    /// assert_eq!(Arrow.y0, 0.0);
+    /// assert_eq!(Arrow.z0, 0.0);
+    /// assert_eq!(Arrow.x1, 0.0);
+    /// assert_eq!(Arrow.y1, 0.0);
+    /// assert_eq!(Arrow.z1, 1.0);
     /// 
     /// ```
     pub fn new(x0: f32, y0: f32, z0:f32, x1: f32, y1: f32, z1:f32) -> Self {
-        Line {
+        Arrow {
             x0,
             y0,
             z0,
             x1,
             y1,
             z1,
-            data: Data::with_name("Line"),
+            data: Data::with_name("Arrow"),
             mesh: None,
         }
     }
 
-    /// Creates a new `Line` with a specified name for `Data`.
+    /// Creates a new `Arrow` with a specified name for `Data`.
     ///
     /// # Arguments
     ///
@@ -83,17 +83,17 @@ impl Line{
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line = Line::with_name("MyLine".to_string(), 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 0.0);
-    /// assert_eq!(line.z0, 0.0);
-    /// assert_eq!(line.x1, 0.0);
-    /// assert_eq!(line.y1, 0.0);
-    /// assert_eq!(line.z1, 1.0);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow = Arrow::with_name("MyArrow".to_string(), 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// assert_eq!(Arrow.x0, 0.0);
+    /// assert_eq!(Arrow.y0, 0.0);
+    /// assert_eq!(Arrow.z0, 0.0);
+    /// assert_eq!(Arrow.x1, 0.0);
+    /// assert_eq!(Arrow.y1, 0.0);
+    /// assert_eq!(Arrow.z1, 1.0);
     /// ```
     pub fn with_name(name: String, x0: f32, y0: f32, z0: f32, x1: f32, y1: f32, z1: f32) -> Self {
-        Line {
+        Arrow {
             x0,
             y0,
             z0,
@@ -105,7 +105,7 @@ impl Line{
         }
     }
 
-    /// Creates a new `Line` from start ´Point´ and end `Point`.
+    /// Creates a new `Arrow` from start ´Point´ and end `Point`.
     ///
     /// # Arguments
     ///
@@ -115,39 +115,39 @@ impl Line{
     ///
     /// ```
     /// use openmodel::geometry::Point;
-    /// use openmodel::geometry::Line;
+    /// use openmodel::geometry::Arrow;
     /// let p0 = Point::new(0.0, 0.0, 0.0);
     /// let p1 = Point::new(0.0, 0.0, 1.0);
-    /// let line = Line::from_points(&p0, &p1);
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 0.0);
-    /// assert_eq!(line.z0, 0.0);
-    /// assert_eq!(line.x1, 0.0);
-    /// assert_eq!(line.y1, 0.0);
-    /// assert_eq!(line.z1, 1.0);
+    /// let Arrow = Arrow::from_points(&p0, &p1);
+    /// assert_eq!(Arrow.x0, 0.0);
+    /// assert_eq!(Arrow.y0, 0.0);
+    /// assert_eq!(Arrow.z0, 0.0);
+    /// assert_eq!(Arrow.x1, 0.0);
+    /// assert_eq!(Arrow.y1, 0.0);
+    /// assert_eq!(Arrow.z1, 1.0);
     /// ```
     pub fn from_points(p0: &Point, p1: &Point) -> Self{
-        Line {
+        Arrow {
             x0:p0.x,
             y0:p0.y,
             z0:p0.z,
             x1:p1.x,
             y1:p1.y,
             z1:p1.z,
-            data: Data::with_name("Line"),
+            data: Data::with_name("Arrow"),
             mesh: None,
         }
     }
 
-    /// Computes the length of the line.
+    /// Computes the length of the Arrow.
     ///
     ///
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// let length = line.length();
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let length = Arrow.length();
     /// assert_eq!(length, 1.0);
     /// ```
     pub fn length(&self) -> f32 {
@@ -171,7 +171,7 @@ impl Line{
         // Generate the mesh
         self.mesh = Some(Mesh::create_pipe(start, end, thickness));
         
-        // If the line has a color, apply it to the mesh
+        // If the Arrow has a color, apply it to the mesh
         if self.data.has_color() {
             if let Some(mesh) = &mut self.mesh {
                 mesh.data.set_color(self.data.get_color());
@@ -181,7 +181,7 @@ impl Line{
         self
     }
 
-    /// Gets the mesh representation of this line as a pipe.
+    /// Gets the mesh representation of this Arrow as a pipe.
     /// If the mesh doesn't exist, creates it first.
     /// 
     /// # Returns
@@ -190,9 +190,9 @@ impl Line{
     /// # Example
     /// 
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// let mesh = line.get_mesh();
+    /// use openmodel::geometry::Arrow;
+    /// let mut Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let mesh = Arrow.get_mesh();
     /// assert!(mesh.is_some());
     /// ```
     pub fn get_mesh(&mut self) -> Option<&Mesh> {
@@ -205,7 +205,7 @@ impl Line{
     }
 
     /// Returns a transform that maps the canonical unit pipe (aligned to +Z, length=1, radius=0.5,
-    /// centered at the origin with z in [-0.5, +0.5]) onto this line segment.
+    /// centered at the origin with z in [-0.5, +0.5]) onto this Arrow segment.
     /// Uses the JSON transformation matrix directly if available, otherwise falls back to coordinate-based calculation.
     pub fn to_pipe_transform(&self) -> Option<Xform> {
         // Check if we have a non-identity transformation matrix in the JSON data
@@ -233,7 +233,7 @@ impl Line{
         let axis = dir.normalize();
         let z_axis = Vector::new(0.0, 0.0, 1.0);
 
-        // Rotation aligning +Z to the line direction
+        // Rotation aligning +Z to the Arrow direction
         let mut dot = axis.dot(&z_axis);
         if dot > 1.0 { dot = 1.0; } else if dot < -1.0 { dot = -1.0; }
         let rotation = if (dot - 1.0).abs() < eps {
@@ -263,33 +263,33 @@ impl Line{
     }
 }
 
-impl Default for Line{
-    /// Creates a default `Line` as a vertical line.
+impl Default for Arrow{
+    /// Creates a default `Arrow` as a vertical Arrow.
     ///
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let l = Line::default();
+    /// use openmodel::geometry::Arrow;
+    /// let l = Arrow::default();
     /// ```
     fn default() -> Self {
-        Line {
+        Arrow {
             x0: 0.0,
             y0: 0.0,
             z0: 0.0,
             x1: 0.0,
             y1: 0.0,
             z1: 1.0,
-            data: Data::with_name("Line"),
+            data: Data::with_name("Arrow"),
             mesh: None,
         }
     }
 }
 
-impl Add<&Vector> for Line {
-    type Output = Line;
+impl Add<&Vector> for Arrow {
+    type Output = Arrow;
 
-    /// Adds the coordinates of a vector to this line and returns a new line.
+    /// Adds the coordinates of a vector to this Arrow and returns a new Arrow.
     ///
     /// # Arguments
     ///
@@ -298,33 +298,33 @@ impl Add<&Vector> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Line, Vector};
-    /// let line0 = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// use openmodel::geometry::{Arrow, Vector};
+    /// let Arrow0 = Arrow::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
     /// let v = Vector::new(0.0, 0.0, 1.0);
-    /// let line1 = line0 + &v;
-    /// assert_eq!(line1.x0, 0.0);
-    /// assert_eq!(line1.y0, 1.0);
-    /// assert_eq!(line1.z0, 3.0);
-    /// assert_eq!(line1.x1, 3.0);
-    /// assert_eq!(line1.y1, 4.0);
-    /// assert_eq!(line1.z1, 6.0);
+    /// let Arrow1 = Arrow0 + &v;
+    /// assert_eq!(Arrow1.x0, 0.0);
+    /// assert_eq!(Arrow1.y0, 1.0);
+    /// assert_eq!(Arrow1.z0, 3.0);
+    /// assert_eq!(Arrow1.x1, 3.0);
+    /// assert_eq!(Arrow1.y1, 4.0);
+    /// assert_eq!(Arrow1.z1, 6.0);
     /// ```
-    fn add(self, other: &Vector) -> Line {
-        Line {
+    fn add(self, other: &Vector) -> Arrow {
+        Arrow {
             x0: self.x0 + other.x,
             y0: self.y0 + other.y,
             z0: self.z0 + other.z,
             x1: self.x1 + other.x,
             y1: self.y1 + other.y,
             z1: self.z1 + other.z,
-            data: Data::with_name("Line"),
+            data: Data::with_name("Arrow"),
             mesh: None,
         }
     }
 }
 
-impl AddAssign<&Vector> for Line {
-    /// Adds the coordinates of a vector to this line.
+impl AddAssign<&Vector> for Arrow {
+    /// Adds the coordinates of a vector to this Arrow.
     ///
     /// # Arguments
     ///
@@ -333,17 +333,17 @@ impl AddAssign<&Vector> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
+    /// use openmodel::geometry::Arrow;
     /// use openmodel::geometry::Vector;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let mut Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// let v = Vector::new(1.0, 1.0, 1.0);
-    /// line += &v;
-    /// assert_eq!(line.x0, 1.0);
-    /// assert_eq!(line.y0, 1.0);
-    /// assert_eq!(line.z0, 1.0);
-    /// assert_eq!(line.x1, 1.0);
-    /// assert_eq!(line.y1, 1.0);
-    /// assert_eq!(line.z1, 2.0);
+    /// Arrow += &v;
+    /// assert_eq!(Arrow.x0, 1.0);
+    /// assert_eq!(Arrow.y0, 1.0);
+    /// assert_eq!(Arrow.z0, 1.0);
+    /// assert_eq!(Arrow.x1, 1.0);
+    /// assert_eq!(Arrow.y1, 1.0);
+    /// assert_eq!(Arrow.z1, 2.0);
     /// ```
     fn add_assign(&mut self, vector: &Vector) {
         self.x0 += vector.x;
@@ -355,10 +355,10 @@ impl AddAssign<&Vector> for Line {
     }
 }
 
-impl Div<f32> for Line {
-    type Output = Line;
+impl Div<f32> for Arrow {
+    type Output = Arrow;
 
-    /// Divides the coordinates of the line by a scalar and returns a new line.
+    /// Divides the coordinates of the Arrow by a scalar and returns a new Arrow.
     ///
     /// # Arguments
     ///
@@ -367,25 +367,25 @@ impl Div<f32> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line0 = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// let line1 = line0 / 2.0;
-    /// assert_eq!(line1.x0, 0.0);
-    /// assert_eq!(line1.y0, 0.0);
-    /// assert_eq!(line1.z0, 0.0);
-    /// assert_eq!(line1.x1, 0.0);
-    /// assert_eq!(line1.y1, 0.0);
-    /// assert_eq!(line1.z1, 0.5);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow0 = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let Arrow1 = Arrow0 / 2.0;
+    /// assert_eq!(Arrow1.x0, 0.0);
+    /// assert_eq!(Arrow1.y0, 0.0);
+    /// assert_eq!(Arrow1.z0, 0.0);
+    /// assert_eq!(Arrow1.x1, 0.0);
+    /// assert_eq!(Arrow1.y1, 0.0);
+    /// assert_eq!(Arrow1.z1, 0.5);
     /// ```
-    fn div(self, factor: f32) -> Line {
+    fn div(self, factor: f32) -> Arrow {
         let mut result = self;
         result /= factor;
         result
     }
 }
 
-impl DivAssign<f32> for Line {
-    /// Divides the coordinates of the Line by a scalar.
+impl DivAssign<f32> for Arrow {
+    /// Divides the coordinates of the Arrow by a scalar.
     ///
     /// # Arguments
     ///
@@ -394,15 +394,15 @@ impl DivAssign<f32> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// line /= 2.0;
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 0.0);
-    /// assert_eq!(line.z0, 0.0);
-    /// assert_eq!(line.x1, 0.0);
-    /// assert_eq!(line.y1, 0.0);
-    /// assert_eq!(line.z1, 0.5);
+    /// use openmodel::geometry::Arrow;
+    /// let mut Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// Arrow /= 2.0;
+    /// assert_eq!(Arrow.x0, 0.0);
+    /// assert_eq!(Arrow.y0, 0.0);
+    /// assert_eq!(Arrow.z0, 0.0);
+    /// assert_eq!(Arrow.x1, 0.0);
+    /// assert_eq!(Arrow.y1, 0.0);
+    /// assert_eq!(Arrow.z1, 0.5);
     /// ```
     fn div_assign(&mut self, factor: f32) {
         self.x0 /= factor;
@@ -414,7 +414,7 @@ impl DivAssign<f32> for Line {
     }
 }
 
-impl Index<usize> for Line {
+impl Index<usize> for Arrow {
     type Output = f32;
 
     /// Provides read-only access to the coordinates of the point using the `[]` operator.
@@ -430,14 +430,14 @@ impl Index<usize> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-    /// assert_eq!(line[0], 0.0);
-    /// assert_eq!(line[1], 1.0);
-    /// assert_eq!(line[2], 2.0);
-    /// assert_eq!(line[3], 3.0);
-    /// assert_eq!(line[4], 4.0);
-    /// assert_eq!(line[5], 5.0);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow = Arrow::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// assert_eq!(Arrow[0], 0.0);
+    /// assert_eq!(Arrow[1], 1.0);
+    /// assert_eq!(Arrow[2], 2.0);
+    /// assert_eq!(Arrow[3], 3.0);
+    /// assert_eq!(Arrow[4], 4.0);
+    /// assert_eq!(Arrow[5], 5.0);
     /// ```
     fn index(&self, index: usize) -> &Self::Output {
         match index {
@@ -452,8 +452,8 @@ impl Index<usize> for Line {
     }
 }
 
-impl IndexMut<usize> for Line {
-    /// Provides mutable access to the coordinates of the line using the `[]` operator.
+impl IndexMut<usize> for Arrow {
+    /// Provides mutable access to the coordinates of the Arrow using the `[]` operator.
     ///
     /// # Arguments
     ///
@@ -467,20 +467,20 @@ impl IndexMut<usize> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// line[0] = 1.0;
-    /// line[1] = 2.0;
-    /// line[2] = 3.0;
-    /// line[3] = 4.0;
-    /// line[4] = 5.0;
-    /// line[5] = 6.0;
-    /// assert_eq!(line[0], 1.0);
-    /// assert_eq!(line[1], 2.0);
-    /// assert_eq!(line[2], 3.0);
-    /// assert_eq!(line[3], 4.0);
-    /// assert_eq!(line[4], 5.0);
-    /// assert_eq!(line[5], 6.0);
+    /// use openmodel::geometry::Arrow;
+    /// let mut Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// Arrow[0] = 1.0;
+    /// Arrow[1] = 2.0;
+    /// Arrow[2] = 3.0;
+    /// Arrow[3] = 4.0;
+    /// Arrow[4] = 5.0;
+    /// Arrow[5] = 6.0;
+    /// assert_eq!(Arrow[0], 1.0);
+    /// assert_eq!(Arrow[1], 2.0);
+    /// assert_eq!(Arrow[2], 3.0);
+    /// assert_eq!(Arrow[3], 4.0);
+    /// assert_eq!(Arrow[4], 5.0);
+    /// assert_eq!(Arrow[5], 6.0);
     /// ```
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         match index {
@@ -495,8 +495,8 @@ impl IndexMut<usize> for Line {
     }
 }
 
-impl MulAssign<f32> for Line {
-    /// Multiplies the coordinates of the line by a scalar.
+impl MulAssign<f32> for Arrow {
+    /// Multiplies the coordinates of the Arrow by a scalar.
     ///
     /// # Arguments
     ///
@@ -505,15 +505,15 @@ impl MulAssign<f32> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let mut line = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-    /// line *= 2.0;
-    /// assert_eq!(line.x0, 0.0);
-    /// assert_eq!(line.y0, 2.0);
-    /// assert_eq!(line.z0, 4.0);
-    /// assert_eq!(line.x1, 6.0);
-    /// assert_eq!(line.y1, 8.0);
-    /// assert_eq!(line.z1, 10.0);
+    /// use openmodel::geometry::Arrow;
+    /// let mut Arrow = Arrow::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// Arrow *= 2.0;
+    /// assert_eq!(Arrow.x0, 0.0);
+    /// assert_eq!(Arrow.y0, 2.0);
+    /// assert_eq!(Arrow.z0, 4.0);
+    /// assert_eq!(Arrow.x1, 6.0);
+    /// assert_eq!(Arrow.y1, 8.0);
+    /// assert_eq!(Arrow.z1, 10.0);
     /// ```
     fn mul_assign(&mut self, factor: f32) {
         self.x0 *= factor;
@@ -525,10 +525,10 @@ impl MulAssign<f32> for Line {
     }
 }
 
-impl Mul<f32> for Line {
-    type Output = Line;
+impl Mul<f32> for Arrow {
+    type Output = Arrow;
 
-    /// Multiplies the coordinates of line point by a scalar and returns a new line.
+    /// Multiplies the coordinates of Arrow point by a scalar and returns a new Arrow.
     ///
     /// # Arguments
     ///
@@ -537,27 +537,27 @@ impl Mul<f32> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line0 = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-    /// let line1 = line0 * 2.0;
-    /// assert_eq!(line1.x0, 0.0);
-    /// assert_eq!(line1.y0, 2.0);
-    /// assert_eq!(line1.z0, 4.0);
-    /// assert_eq!(line1.x1, 6.0);
-    /// assert_eq!(line1.y1, 8.0);
-    /// assert_eq!(line1.z1, 10.0);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow0 = Arrow::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// let Arrow1 = Arrow0 * 2.0;
+    /// assert_eq!(Arrow1.x0, 0.0);
+    /// assert_eq!(Arrow1.y0, 2.0);
+    /// assert_eq!(Arrow1.z0, 4.0);
+    /// assert_eq!(Arrow1.x1, 6.0);
+    /// assert_eq!(Arrow1.y1, 8.0);
+    /// assert_eq!(Arrow1.z1, 10.0);
     /// ```
-    fn mul(self, factor: f32) -> Line {
+    fn mul(self, factor: f32) -> Arrow {
         let mut result = self;
         result *= factor;
         result
     }
 }
 
-impl Sub<&Vector> for Line {
-    type Output = Line;
+impl Sub<&Vector> for Arrow {
+    type Output = Arrow;
 
-    /// Subtracts the coordinates of a vector from this Line and returns a new vector.
+    /// Subtracts the coordinates of a vector from this Arrow and returns a new vector.
     ///
     /// # Arguments
     ///
@@ -566,33 +566,33 @@ impl Sub<&Vector> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Line, Vector};
-    /// let line0 = Line::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+    /// use openmodel::geometry::{Arrow, Vector};
+    /// let Arrow0 = Arrow::new(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
     /// let v = Vector::new(0.0, 0.0, 1.0);
-    /// let line1 = line0 - &v;
-    /// assert_eq!(line1.x0, 0.0);
-    /// assert_eq!(line1.y0, 1.0);
-    /// assert_eq!(line1.z0, 1.0);
-    /// assert_eq!(line1.x1, 3.0);
-    /// assert_eq!(line1.y1, 4.0);
-    /// assert_eq!(line1.z1, 4.0);
+    /// let Arrow1 = Arrow0 - &v;
+    /// assert_eq!(Arrow1.x0, 0.0);
+    /// assert_eq!(Arrow1.y0, 1.0);
+    /// assert_eq!(Arrow1.z0, 1.0);
+    /// assert_eq!(Arrow1.x1, 3.0);
+    /// assert_eq!(Arrow1.y1, 4.0);
+    /// assert_eq!(Arrow1.z1, 4.0);
     /// ```
-    fn sub(self, vector: &Vector) -> Line {
-        Line {
+    fn sub(self, vector: &Vector) -> Arrow {
+        Arrow {
             x0: self.x0 - vector.x,
             y0: self.y0 - vector.y,
             z0: self.z0 - vector.z,
             x1: self.x1 - vector.x,
             y1: self.y1 - vector.y,
             z1: self.z1 - vector.z,
-            data: Data::with_name("Line"),
+            data: Data::with_name("Arrow"),
             mesh: None,
         }
     }
 }
 
-impl SubAssign<&Vector> for Line {
-    /// Subtracts the coordinates of a line using a vector.
+impl SubAssign<&Vector> for Arrow {
+    /// Subtracts the coordinates of a Arrow using a vector.
     ///
     /// # Arguments
     ///
@@ -601,17 +601,17 @@ impl SubAssign<&Vector> for Line {
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
+    /// use openmodel::geometry::Arrow;
     /// use openmodel::geometry::Vector;
-    /// let mut line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let mut Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     /// let v = Vector::new(1.0, 2.0, 3.0);
-    /// line -= &v;
-    /// assert_eq!(line.x0, -1.0);
-    /// assert_eq!(line.y0, -2.0);
-    /// assert_eq!(line.z0, -3.0);
-    /// assert_eq!(line.x1, -1.0);
-    /// assert_eq!(line.y1, -2.0);
-    /// assert_eq!(line.z1, -2.0);
+    /// Arrow -= &v;
+    /// assert_eq!(Arrow.x0, -1.0);
+    /// assert_eq!(Arrow.y0, -2.0);
+    /// assert_eq!(Arrow.z0, -3.0);
+    /// assert_eq!(Arrow.x1, -1.0);
+    /// assert_eq!(Arrow.y1, -2.0);
+    /// assert_eq!(Arrow.z1, -2.0);
     /// ```
     fn sub_assign(&mut self, vector: &Vector) {
         self.x0 -= vector.x;
@@ -623,48 +623,48 @@ impl SubAssign<&Vector> for Line {
     }
 }
 
-impl From<Line> for Vector {
-    /// Converts a `Line` into a `Vector`.
+impl From<Arrow> for Vector {
+    /// Converts a `Arrow` into a `Vector`.
     ///
     /// # Arguments
     ///
-    /// * `line` - The `Line` to be converted.
+    /// * `Arrow` - The `Arrow` to be converted.
     ///
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::{Line, Vector};
-    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// let v: Vector = line.into();
+    /// use openmodel::geometry::{Arrow, Vector};
+    /// let Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// let v: Vector = Arrow.into();
     /// assert_eq!(v.x, 0.0);
     /// assert_eq!(v.y, 0.0);
     /// assert_eq!(v.z, 1.0);
     /// ```
-    fn from(line: Line) -> Self {
+    fn from(arr : Arrow) -> Self {
         Vector::new(
-            line.x1 - line.x0,
-            line.y1 - line.y0,
-            line.z1 - line.z0
+            arr.x1 - arr.x0,
+            arr.y1 - arr.y0,
+            arr.z1 - arr.z0
         )
     }
 }
 
-impl fmt::Display for Line{
-    /// Log line.
+impl fmt::Display for Arrow{
+    /// Log Arrow.
     /// # Example
     ///
     /// ```
-    /// use openmodel::geometry::Line;
-    /// let line = Line::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    /// println!("{}", line);
+    /// use openmodel::geometry::Arrow;
+    /// let Arrow = Arrow::new(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    /// println!("{}", Arrow);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        write!(f, "Line({}, {}, {}, {}, {}, {})", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)
+        write!(f, "Arrow({}, {}, {}, {}, {}, {})", self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)
     }
 }
 
 // JSON serialization support
-impl JsonSerializable for Line {
+impl JsonSerializable for Arrow {
     fn to_json_value(&self) -> serde_json::Value {
         let geometric_data = serde_json::json!({
             "x0": self.x0,
@@ -674,11 +674,11 @@ impl JsonSerializable for Line {
             "y1": self.y1,
             "z1": self.z1
         });
-        self.data.to_json_data("openmodel.geometry/Line", geometric_data, false)
+        self.data.to_json_data("openmodel.geometry/Arrow", geometric_data, false)
     }
 }
 
-impl FromJsonData for Line {
+impl FromJsonData for Arrow {
     fn from_json_data(data: &serde_json::Value) -> Option<Self> {
         serde_json::from_value(data.clone()).ok()
     }

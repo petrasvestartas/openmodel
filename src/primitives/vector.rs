@@ -7,25 +7,28 @@ use crate::common::json_serialization::{HasJsonData, FromJsonData};
 use crate::common::Data;
 
 /// A vector in 3D space with x, y, z components
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 pub struct Vector {
     /// The x component of the vector.
-    pub x: f64,
+    pub x: f32,
     /// The y component of the vector.
-    pub y: f64,
+    pub y: f32,
     /// The z component of the vector.
-    pub z: f64,
+    pub z: f32,
 }
 
-// Custom Serialize implementation to use COMPAS-style format by default
+// Custom Serialize implementation for simple format compatible with wink
 impl Serialize for Vector {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        // Use COMPAS-style format with dtype when serializing
-        let value = self.to_json_data(false);
-        value.serialize(serializer)
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("Vector", 3)?;
+        state.serialize_field("x", &self.x)?;
+        state.serialize_field("y", &self.y)?;
+        state.serialize_field("z", &self.z)?;
+        state.end()
     }
 }
 
@@ -55,9 +58,9 @@ impl FromJsonData for Vector {
         };
         
         // Extract coordinates
-        let x = vector_data.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let y = vector_data.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        let z = vector_data.get("z").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let x = vector_data.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+        let y = vector_data.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+        let z = vector_data.get("z").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
         
         Some(Vector::new(x, y, z))
     }
@@ -81,7 +84,7 @@ impl Vector {
     /// assert_eq!(v.y, 2.0);
     /// assert_eq!(v.z, 3.0);
     /// ```
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Vector { x, y, z }
     }
 
@@ -115,6 +118,33 @@ impl Vector {
         Self::new(0.0, 0.0, 1.0)
     }
 
+    /// Compute the squared magnitude (length) of the vector.
+    /// This is more efficient than magnitude() when you only need to compare lengths.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::primitives::Vector;
+    /// let v = Vector::new(3.0, 4.0, 0.0);
+    /// assert_eq!(v.magnitude_squared(), 25.0);
+    /// ```
+    pub fn magnitude_squared(&self) -> f32 {
+        self.length_squared()
+    }
+
+    /// Check if all components of the vector are finite (not NaN or infinite).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::primitives::Vector;
+    /// let v = Vector::new(1.0, 2.0, 3.0);
+    /// assert!(v.is_finite());
+    /// ```
+    pub fn is_finite(&self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
+    }
+
     /// Calculate the dot product of this vector with another vector.
     ///
     /// # Arguments
@@ -129,7 +159,7 @@ impl Vector {
     /// let v2 = Vector::new(4.0, 5.0, 6.0);
     /// assert_eq!(v1.dot(&v2), 32.0);
     /// ```
-    pub fn dot(&self, other: &Vector) -> f64 {
+    pub fn dot(&self, other: &Vector) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -167,7 +197,7 @@ impl Vector {
     /// let v = Vector::new(3.0, 4.0, 0.0);
     /// assert_eq!(v.length(), 5.0);
     /// ```
-    pub fn length(&self) -> f64 {
+    pub fn length(&self) -> f32 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
 
@@ -181,7 +211,7 @@ impl Vector {
     /// let v = Vector::new(3.0, 4.0, 0.0);
     /// assert_eq!(v.length_squared(), 25.0);
     /// ```
-    pub fn length_squared(&self) -> f64 {
+    pub fn length_squared(&self) -> f32 {
         self.x.powi(2) + self.y.powi(2) + self.z.powi(2)
     }
 
@@ -225,7 +255,7 @@ impl Vector {
     }
 
     /// Check if the vector is very close to zero in all components
-    pub fn is_zero(&self, tolerance: f64) -> bool {
+    pub fn is_zero(&self, tolerance: f32) -> bool {
         self.x.abs() < tolerance && self.y.abs() < tolerance && self.z.abs() < tolerance
     }
     
@@ -326,10 +356,10 @@ impl SubAssign for Vector {
 }
 
 // Implement Mul for Vector * f64 = Vector
-impl Mul<f64> for Vector {
+impl Mul<f32> for Vector {
     type Output = Vector;
 
-    fn mul(self, scalar: f64) -> Self::Output {
+    fn mul(self, scalar: f32) -> Self::Output {
         Vector {
             x: self.x * scalar,
             y: self.y * scalar,
@@ -339,10 +369,10 @@ impl Mul<f64> for Vector {
 }
 
 // Implement Mul for &Vector * f64 = Vector
-impl Mul<f64> for &Vector {
+impl Mul<f32> for &Vector {
     type Output = Vector;
 
-    fn mul(self, scalar: f64) -> Self::Output {
+    fn mul(self, scalar: f32) -> Self::Output {
         Vector {
             x: self.x * scalar,
             y: self.y * scalar,
@@ -352,8 +382,8 @@ impl Mul<f64> for &Vector {
 }
 
 // Implement MulAssign for Vector *= f64
-impl MulAssign<f64> for Vector {
-    fn mul_assign(&mut self, scalar: f64) {
+impl MulAssign<f32> for Vector {
+    fn mul_assign(&mut self, scalar: f32) {
         self.x *= scalar;
         self.y *= scalar;
         self.z *= scalar;
@@ -361,10 +391,10 @@ impl MulAssign<f64> for Vector {
 }
 
 // Implement Div for Vector / f64 = Vector
-impl Div<f64> for Vector {
+impl Div<f32> for Vector {
     type Output = Vector;
 
-    fn div(self, scalar: f64) -> Self::Output {
+    fn div(self, scalar: f32) -> Self::Output {
         assert!(!scalar.is_nan() && scalar != 0.0, "Division by zero or NaN");
         Vector {
             x: self.x / scalar,
@@ -375,10 +405,10 @@ impl Div<f64> for Vector {
 }
 
 // Implement Div for &Vector / f64 = Vector
-impl Div<f64> for &Vector {
+impl Div<f32> for &Vector {
     type Output = Vector;
 
-    fn div(self, scalar: f64) -> Self::Output {
+    fn div(self, scalar: f32) -> Self::Output {
         assert!(!scalar.is_nan() && scalar != 0.0, "Division by zero or NaN");
         Vector {
             x: self.x / scalar,
@@ -389,8 +419,8 @@ impl Div<f64> for &Vector {
 }
 
 // Implement DivAssign for Vector /= f64
-impl DivAssign<f64> for Vector {
-    fn div_assign(&mut self, scalar: f64) {
+impl DivAssign<f32> for Vector {
+    fn div_assign(&mut self, scalar: f32) {
         assert!(!scalar.is_nan() && scalar != 0.0, "Division by zero or NaN");
         self.x /= scalar;
         self.y /= scalar;
@@ -426,7 +456,7 @@ impl Neg for &Vector {
 
 // Implement Index for vector[0], vector[1], vector[2]
 impl Index<usize> for Vector {
-    type Output = f64;
+    type Output = f32;
 
     fn index(&self, index: usize) -> &Self::Output {
         match index {

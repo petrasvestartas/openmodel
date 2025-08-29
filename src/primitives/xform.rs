@@ -1,5 +1,5 @@
 use crate::primitives::vector::Vector;
-use crate::geometry::point::Point;
+use crate::primitives::point::Point;
 use serde::{Deserialize, Serialize, Serializer};
 use std::ops::{Index, IndexMut, Mul, MulAssign};
 use std::fmt;
@@ -11,7 +11,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Xform {
     /// The matrix elements stored in column-major order as a flattened array
-    pub m: [f64; 16],
+    pub m: [f32; 16],
 }
 
 impl Xform {
@@ -20,8 +20,30 @@ impl Xform {
     /// # Arguments
     ///
     /// * `value` - The value to initialize all elements with
-    pub fn new(value: f64) -> Self {
+    pub fn new(value: f32) -> Self {
         Xform { m: [value; 16] }
+    }
+
+    /// Creates a new transformation matrix from a 4x4 matrix array.
+    ///
+    /// # Arguments
+    ///
+    /// * `matrix` - The 16-element array representing the 4x4 matrix in column-major order
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use openmodel::primitives::Xform;
+    /// let matrix = [
+    ///     1.0, 0.0, 0.0, 0.0,
+    ///     0.0, 1.0, 0.0, 0.0,
+    ///     0.0, 0.0, 1.0, 0.0,
+    ///     0.0, 0.0, 0.0, 1.0
+    /// ];
+    /// let xform = Xform::from_matrix(matrix);
+    /// ```
+    pub fn from_matrix(matrix: [f32; 16]) -> Self {
+        Xform { m: matrix }
     }
 
     /// Creates a new identity transformation matrix.
@@ -64,7 +86,7 @@ impl Xform {
     /// assert_eq!(transformed.y, 4.0);
     /// assert_eq!(transformed.z, 5.0);
     /// ```
-    pub fn translation(tx: f64, ty: f64, tz: f64) -> Self {
+    pub fn translation(tx: f32, ty: f32, tz: f32) -> Self {
         let mut xform = Self::identity();
         xform.m[12] = tx;
         xform.m[13] = ty;
@@ -90,7 +112,7 @@ impl Xform {
     /// assert_eq!(transformed.y, 3.0);
     /// assert_eq!(transformed.z, 4.0);
     /// ```
-    pub fn scaling(sx: f64, sy: f64, sz: f64) -> Self {
+    pub fn scaling(sx: f32, sy: f32, sz: f32) -> Self {
         let mut xform = Self::identity();
         xform.m[0] = sx;
         xform.m[5] = sy;
@@ -103,7 +125,7 @@ impl Xform {
     /// # Arguments
     ///
     /// * `angle_radians` - Rotation angle in radians
-    pub fn rotation_x(angle_radians: f64) -> Self {
+    pub fn rotation_x(angle_radians: f32) -> Self {
         let mut xform = Self::identity();
         let cos_angle = angle_radians.cos();
         let sin_angle = angle_radians.sin();
@@ -121,7 +143,7 @@ impl Xform {
     /// # Arguments
     ///
     /// * `angle_radians` - Rotation angle in radians
-    pub fn rotation_y(angle_radians: f64) -> Self {
+    pub fn rotation_y(angle_radians: f32) -> Self {
         let mut xform = Self::identity();
         let cos_angle = angle_radians.cos();
         let sin_angle = angle_radians.sin();
@@ -139,7 +161,7 @@ impl Xform {
     /// # Arguments
     ///
     /// * `angle_radians` - Rotation angle in radians
-    pub fn rotation_z(angle_radians: f64) -> Self {
+    pub fn rotation_z(angle_radians: f32) -> Self {
         let mut xform = Self::identity();
         let cos_angle = angle_radians.cos();
         let sin_angle = angle_radians.sin();
@@ -158,7 +180,7 @@ impl Xform {
     ///
     /// * `axis` - The axis of rotation (should be normalized)
     /// * `angle_radians` - Rotation angle in radians
-    pub fn rotation(axis: &Vector, angle_radians: f64) -> Self {
+    pub fn rotation(axis: &Vector, angle_radians: f32) -> Self {
         assert!((axis.length() - 1.0).abs() < 1e-6, "Axis must be normalized");
         
         let mut xform = Self::identity();
@@ -398,7 +420,7 @@ impl Default for Xform {
 
 // Implement Index trait for accessing matrix elements with [(row, col)] syntax
 impl Index<(usize, usize)> for Xform {
-    type Output = f64;
+    type Output = f32;
 
     fn index(&self, idx: (usize, usize)) -> &Self::Output {
         let (row, col) = idx;
@@ -459,7 +481,7 @@ impl MulAssign for Xform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::f64::consts::PI;
+    use std::f32::consts::PI;
 
     #[test]
     fn test_identity() {
@@ -581,15 +603,16 @@ mod tests {
     }
 }
 
-// Custom Serialize implementation to use COMPAS-style format by default
+// Custom Serialize implementation for simple format compatible with wink
 impl Serialize for Xform {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        // Use COMPAS-style format with dtype when serializing
-        let value = self.to_json_data(false);
-        value.serialize(serializer)
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("Xform", 1)?;
+        state.serialize_field("m", &self.m)?;
+        state.end()
     }
 }
 
@@ -620,7 +643,7 @@ impl FromJsonData for Xform {
                 let mut m = [0.0; 16];
                 for (i, val) in m_array.iter().enumerate() {
                     if let Some(f) = val.as_f64() {
-                        m[i] = f;
+                        m[i] = f as f32;
                     } else {
                         return None;
                     }

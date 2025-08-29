@@ -1,242 +1,283 @@
-use openmodel::geometry::{Point, Vector, Line, Plane, Color, PointCloud, LineCloud, Pline, Mesh};
-use openmodel::primitives::Xform;
-use openmodel::common::{JsonSerializable, FromJsonData, HasJsonData, json_dump, json_load};
-use serde::{Serialize, Deserialize};
-use serde_json;
+use openmodel::geometry::{Line, Arrow, Mesh, PointCloud};
+use openmodel::primitives::{Point, Vector, Color, Xform};
+use openmodel::AllGeometryData;
 
-// Comprehensive geometry data structure with all geometry types
-#[derive(Serialize, Deserialize, Debug)]
-struct AllGeometryData {
-    points: Vec<Point>,
-    vectors: Vec<Vector>,
-    lines: Vec<Line>,
-    planes: Vec<Plane>,
-    colors: Vec<Color>,
-    point_clouds: Vec<PointCloud>,
-    line_clouds: Vec<LineCloud>,
-    plines: Vec<Pline>,
-    xforms: Vec<Xform>,
-    meshes: Vec<Mesh>,
+// Minimal star polygon mesh (concave, non-self-intersecting)
+fn make_star_mesh() -> Mesh {
+    let polygon = vec![
+        Point::new(0.12821, 0.514321, 3.0),
+        Point::new(-0.103219, 0.282757, 3.0),
+        Point::new(-0.430101, 0.264609, 3.0),
+        Point::new(-0.281387, -0.02705, 3.0),
+        Point::new(-0.365139, -0.343542, 3.0),
+        Point::new(-0.041799, -0.292234, 3.0),
+        Point::new(0.233322, -0.469688, 3.0),
+        Point::new(0.284442, -0.146318, 3.0),
+        Point::new(0.538228, 0.0605, 3.0),
+        Point::new(0.246482, 0.209046, 3.0),
+    ];
+    let mut mesh = Mesh::from_polygons(vec![polygon], None);
+    for vd in mesh.vertex.values_mut() {
+        vd.set_color(1.0, 0.84, 0.0);
+    }
+    // Set edge color and thickness using existing data field
+    mesh.data.set_color([0, 255, 0]); // Bright yellow (RGB 0-255)
+    mesh.data.set_thickness(0.1);
+    mesh
 }
 
-// Implement JsonSerializable for AllGeometryData to work with json_dump/json_load
-impl JsonSerializable for AllGeometryData {
-    fn to_json_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
-    }
+fn make_cube_mesh() -> Mesh{
+    let cube_faces = vec![
+        // Bottom face (z=0) - CCW when viewed from below (outward normal -Z)
+        vec![
+            Point::new(2.0, 0.0, 0.0),
+            Point::new(2.0, 1.0, 0.0),
+            Point::new(3.0, 1.0, 0.0),
+            Point::new(3.0, 0.0, 0.0),
+        ],
+        // Top face (z=1) - CCW when viewed from above (outward normal +Z)
+        vec![
+            Point::new(2.0, 0.0, 1.0),
+            Point::new(3.0, 0.0, 1.0),
+            Point::new(3.0, 1.0, 1.0),
+            Point::new(2.0, 1.0, 1.0),
+        ],
+        // Front face (y=0) - CCW when viewed from front (outward normal -Y)
+        vec![
+            Point::new(2.0, 0.0, 0.0),
+            Point::new(3.0, 0.0, 0.0),
+            Point::new(3.0, 0.0, 1.0),
+            Point::new(2.0, 0.0, 1.0),
+        ],
+        // Back face (y=1) - CCW when viewed from back (outward normal +Y)
+        vec![
+            Point::new(3.0, 1.0, 0.0),
+            Point::new(2.0, 1.0, 0.0),
+            Point::new(2.0, 1.0, 1.0),
+            Point::new(3.0, 1.0, 1.0),
+        ],
+        // Left face (x=2) - CCW when viewed from left (outward normal -X)
+        vec![
+            Point::new(2.0, 1.0, 0.0),
+            Point::new(2.0, 0.0, 0.0),
+            Point::new(2.0, 0.0, 1.0),
+            Point::new(2.0, 1.0, 1.0),
+        ],
+        // Right face (x=3) - CCW when viewed from right (outward normal +X)
+        vec![
+            Point::new(3.0, 0.0, 0.0),
+            Point::new(3.0, 1.0, 0.0),
+            Point::new(3.0, 1.0, 1.0),
+            Point::new(3.0, 0.0, 1.0),
+        ],
+    ];
+    let mut cube = Mesh::from_polygons(cube_faces, None);
+    // Set edge color and thickness using existing data field
+    cube.data.set_color([0, 0, 255]); // Blue (RGB 0-255)
+    cube.data.set_thickness(0.1);
+    cube
 }
 
-// Implement FromJsonData for AllGeometryData to work with json_load
-impl FromJsonData for AllGeometryData {
-    fn from_json_data(data: &serde_json::Value) -> Option<Self> {
-        serde_json::from_value(data.clone()).ok()
+fn make_dodecahedron_mesh() -> Mesh {
+    // Golden ratio
+    let phi = (1.0 + 5.0_f32.sqrt()) / 2.0;
+    let edge_length = 1.0f32; // L = 2.0
+    let a = edge_length / 2.0;
+    let b = a * phi;
+    let c = a + b;
+    
+    // 20 vertices of regular dodecahedron (moved +3 units on Y axis)
+    let vertices = vec![
+        Point::new(-b, -b + 3.0, -b), // 0
+        Point::new( b, -b + 3.0, -b), // 1
+        Point::new(-b,  b + 3.0, -b), // 2
+        Point::new( b,  b + 3.0, -b), // 3
+        Point::new(-b, -b + 3.0,  b), // 4
+        Point::new( b, -b + 3.0,  b), // 5
+        Point::new(-b,  b + 3.0,  b), // 6
+        Point::new( b,  b + 3.0,  b), // 7
+        Point::new( c, -a + 3.0,  0.0), // 8
+        Point::new( c,  a + 3.0,  0.0), // 9
+        Point::new(-c, -a + 3.0,  0.0), // 10
+        Point::new(-c,  a + 3.0,  0.0), // 11
+        Point::new( a,  0.0 + 3.0, -c), // 12
+        Point::new(-a,  0.0 + 3.0, -c), // 13
+        Point::new( a,  0.0 + 3.0,  c), // 14
+        Point::new(-a,  0.0 + 3.0,  c), // 15
+        Point::new( 0.0, -c + 3.0, -a), // 16
+        Point::new( 0.0, -c + 3.0,  a), // 17
+        Point::new( 0.0,  c + 3.0, -a), // 18
+        Point::new( 0.0,  c + 3.0,  a), // 19
+    ];
+    
+    // 12 pentagonal faces (counterclockwise when viewed from outside)
+    let faces = vec![
+        vec![vertices[1].clone(), vertices[12].clone(), vertices[3].clone(), vertices[9].clone(), vertices[8].clone()],   // Face 0
+        vec![vertices[5].clone(), vertices[8].clone(), vertices[9].clone(), vertices[7].clone(), vertices[14].clone()],   // Face 1
+        vec![vertices[0].clone(), vertices[10].clone(), vertices[11].clone(), vertices[2].clone(), vertices[13].clone()], // Face 2
+        vec![vertices[4].clone(), vertices[15].clone(), vertices[6].clone(), vertices[11].clone(), vertices[10].clone()], // Face 3
+        vec![vertices[1].clone(), vertices[16].clone(), vertices[0].clone(), vertices[13].clone(), vertices[12].clone()], // Face 4
+        vec![vertices[3].clone(), vertices[12].clone(), vertices[13].clone(), vertices[2].clone(), vertices[18].clone()], // Face 5
+        vec![vertices[5].clone(), vertices[14].clone(), vertices[15].clone(), vertices[4].clone(), vertices[17].clone()], // Face 6
+        vec![vertices[7].clone(), vertices[19].clone(), vertices[6].clone(), vertices[15].clone(), vertices[14].clone()], // Face 7
+        vec![vertices[1].clone(), vertices[8].clone(), vertices[5].clone(), vertices[17].clone(), vertices[16].clone()],  // Face 8
+        vec![vertices[0].clone(), vertices[16].clone(), vertices[17].clone(), vertices[4].clone(), vertices[10].clone()], // Face 9
+        vec![vertices[3].clone(), vertices[18].clone(), vertices[19].clone(), vertices[7].clone(), vertices[9].clone()],  // Face 10
+        vec![vertices[2].clone(), vertices[11].clone(), vertices[6].clone(), vertices[19].clone(), vertices[18].clone()], // Face 11
+    ];
+    
+    let mut dodecahedron = Mesh::from_polygons(faces, None);
+    // Set edge color and thickness using existing data field
+    dodecahedron.data.set_color([100, 100, 100]); // Red (RGB 0-255)
+    dodecahedron.data.set_thickness(0.1);
+    
+    dodecahedron
+}
+
+fn make_point_cloud() -> PointCloud {
+    
+    let mut points = Vec::new();
+    let mut normals = Vec::new();
+    let mut colors = Vec::new();
+    
+    // Generate 10x10x10 = 1,000 points within 10x10x10 bounds
+    let grid_size = 10;
+    let bound = 1.0f32; // -5 to +5 = 10 units
+    let step = (2.0 * bound) / (grid_size as f32 - 1.0);
+    
+    for i in 0..grid_size {
+        for j in 0..grid_size {
+            for k in 0..grid_size {
+                let x = -bound + (i as f32) * step;
+                let y = -bound + (j as f32) * step + 5.0;
+                let z = -bound + (k as f32) * step;
+                
+                points.push(Point::new(x, y, z));
+                
+                // Generate upward-pointing normals
+                normals.push(Vector::new(0.0, 0.0, 1.0));
+                
+                // Generate colors based on position (rainbow gradient)
+                let r = ((i as f32 / grid_size as f32) * 255.0) as u8;
+                let g = ((j as f32 / grid_size as f32) * 255.0) as u8;
+                let b = ((k as f32 / grid_size as f32) * 255.0) as u8;
+                colors.push(Color::new(r, g, b, 255));
+            }
+        }
     }
+    
+    
+    // Create a point cloud with transformation matrix
+    let mut point_cloud = PointCloud::new(points, normals, colors);
+    
+    // Apply a transformation: translate by (2, 0, 1) and rotate 45 degrees around Z-axis
+    let cos_45 = 0.7071067811865476f32; // cos(45°)
+    let sin_45 = 0.7071067811865475f32; // sin(45°)
+    
+    point_cloud.xform = Xform::from_matrix([
+        cos_45*0.0+1.0, -sin_45*0.0, 0.0, 0.0,  // Rotate + translate X
+        sin_45*0.0,  cos_45*0.0+1.0, 0.0, 0.0,  // Rotate + translate Y  
+        0.0,     0.0,    1.0, 0.0,  // No rotation in Z + translate Z
+        0.0,     0.0,    0.0, 1.0   // Homogeneous coordinate
+    ]);
+    
+    point_cloud
+}
+
+fn make_lines() -> Vec<Line> {
+    // Create lines with varying thickness and color
+    let mut lines: Vec<Line> = Vec::new();
+
+    // Grid lines with default thickness
+    let size: i32 = 40; // -5..=5 => 11 lines => 10x10 cells
+    let thickness = 0.02;
+
+    // Horizontal lines (vary X) - red for x-axis (y=0), black for others
+    for i in -size..=size {
+        let y = i as f32;
+        let mut line = Line::from_points(&Point::new(-(size as f32), y, 0.0), &Point::new(size as f32, y, 0.0));
+        line.data.set_thickness(thickness);
+        line.data.set_color([0, 0, 0]); // Red for x-axis (y=0)
+        lines.push(line);
+    }
+    // Vertical lines (vary Y) - green for y-axis (x=0), black for others
+    for i in -size..=size {
+        let x = i as f32;
+        let mut line = Line::from_points(&Point::new(x, -(size as f32), 0.0), &Point::new(x, size as f32, 0.0));
+        line.data.set_thickness(thickness);
+        line.data.set_color([0, 0, 0]); // Green for y-axis (x=0)
+        lines.push(line);
+    }
+    let axes_scale = 2.0;
+    let mut line_x = Line::from_points(&Point::new(0.0, 0.0, 0.0), &Point::new(size as f32, 0.0, 0.0));
+    line_x.data.set_thickness(thickness*axes_scale);
+    line_x.data.set_color([255, 0, 0]); // Red for x-axis (y=0)
+    lines.push(line_x);
+    let mut line_y = Line::from_points(&Point::new(0.0, 0.0, 0.0), &Point::new(0.0, size as f32, 0.0));
+    line_y.data.set_thickness(thickness*axes_scale);
+    line_y.data.set_color([0, 255, 0]); // Green for y-axis (x=0)
+    lines.push(line_y);
+    let mut line_z = Line::from_points(&Point::new(0.0, 0.0, 0.0), &Point::new(0.0, 0.0, size as f32));
+    line_z.data.set_thickness(thickness*axes_scale);
+    line_z.data.set_color([0, 0, 255]); // Blue for z-axis (x=0)
+    lines.push(line_z);
+
+    lines
+}
+
+fn make_arrows() -> Vec<Arrow> {
+    let mut arrows: Vec<Arrow> = Vec::new();
+    let thickness = 0.3;
+    
+    // Create arrows at origin with larger size and bright colors for visibility
+    let mut arrow_x = Arrow::new(0.0+4.0, 0.0, 0.0, 20.0+4.0, 0.0, 0.0);
+    arrow_x.data.set_color([255, 0, 0]); // Red
+    arrow_x.data.set_thickness(thickness);
+    arrows.push(arrow_x);
+    
+    let mut arrow_y = Arrow::new(0.0+4.0, 0.0, 0.0, 0.0+4.0, 3.0, 0.0);
+    arrow_y.data.set_color([0, 255, 0]); // Green
+    arrow_y.data.set_thickness(thickness);
+    arrows.push(arrow_y);
+    
+    let mut arrow_z = Arrow::new(0.0+4.0, 0.0, 0.0, 0.0+4.0, 0.0, 3.0);
+    arrow_z.data.set_color([0, 0, 255]); // Blue
+    arrow_z.data.set_thickness(thickness);
+    arrows.push(arrow_z);
+    
+    arrows
 }
 
 fn main() {
-    println!("=== Testing Concave Mesh with Ear Clipping ===\n");
     
-    // Create a star polygon using the provided coordinates
-    // These coordinates create a proper star shape
-    let concave_polygon = vec![
-        Point::new(0.12821, 0.514321, 0.0),    // Point 1
-        Point::new(-0.103219, 0.282757, 0.0),  // Point 2
-        Point::new(-0.430101, 0.264609, 0.0),  // Point 3
-        Point::new(-0.281387, -0.02705, 0.0),  // Point 4
-        Point::new(-0.365139, -0.343542, 0.0), // Point 5
-        Point::new(-0.041799, -0.292234, 0.0), // Point 6
-        Point::new(0.233322, -0.469688, 0.0),  // Point 7
-        Point::new(0.284442, -0.146318, 0.0),  // Point 8
-        Point::new(0.538228, 0.0605, 0.0),     // Point 9
-        Point::new(0.246482, 0.209046, 0.0),   // Point 10
-    ];
     
-    println!("Creating star mesh with {} vertices using provided coordinates...", concave_polygon.len());
-    
-    // ASCII visualization of the star polygon
-    println!("\n=== Star Polygon Visualization (1x1 screen) ===");
-    println!("Y");
-    println!("1.0 ┌─────────────────────────────────────┐");
-    println!("    │                                     │");
-    println!("0.8 │                ⭐                   │");
-    println!("    │                                     │");
-    println!("0.6 │                                     │");
-    println!("    │                                     │");
-    println!("0.4 │                                     │");
-    println!("    │                                     │");
-    println!("0.2 │                                     │");
-    println!("    │                                     │");
-    println!("0.0 └─────────────────────────────────────┘");
-    println!("    0.0   0.2   0.4   0.6   0.8   1.0   X");
-    println!();
-    println!("Polygon vertices (in order):");
-    for (i, point) in concave_polygon.iter().enumerate() {
-        println!("  {}: ({:.6}, {:.6}, {:.6})", i, point.x, point.y, point.z);
-    }
-    
-    let mut mesh = Mesh::from_polygon_earclip(concave_polygon);
-    
-    // Add colors to vertices
-    let colors = [
-        [1.0, 0.0, 0.0],   // Red
-        [0.0, 1.0, 0.0],   // Green
-        [0.0, 0.0, 1.0],   // Blue
-        [1.0, 1.0, 0.0],   // Yellow
-        [1.0, 0.0, 1.0],   // Magenta
-        [0.0, 1.0, 1.0],   // Cyan
-        [1.0, 0.5, 0.0],   // Orange
-        [0.5, 0.0, 1.0],   // Purple
-        [0.0, 0.5, 0.5],   // Teal
-        [0.5, 0.5, 0.0],   // Olive
-    ];
-    
-    // Add colors to each vertex
-    for (i, (vertex_key, vertex_data)) in mesh.vertex.iter_mut().enumerate() {
-        let color = colors[i % colors.len()];
-        vertex_data.set_color(color[0], color[1], color[2]);
-    }
-    
-    println!("\n✅ Star mesh created successfully!");
-    println!("   Vertices: {}", mesh.number_of_vertices());
-    println!("   Faces: {}", mesh.number_of_faces());
-    println!("   Edges: {}", mesh.number_of_edges());
-    println!("   Euler characteristic: {}", mesh.euler());
-    
-    // Print face information with vertex coordinates
-    println!("\n=== Triangulation Details ===");
-    for (face_key, vertices) in mesh.get_face_data() {
-        print!("Face {}: ", face_key);
-        for (i, &vertex_key) in vertices.iter().enumerate() {
-            if let Some(pos) = mesh.vertex_position(vertex_key) {
-                if i > 0 { print!(" -> "); }
-                print!("({:.6}, {:.6})", pos.x, pos.y);
-            }
-        }
-        println!();
-    }
-    
-    // Verify the mesh properties
-    println!("\n=== Mesh Properties ===");
-    println!("Is empty: {}", mesh.is_empty());
-    println!("Number of vertices: {}", mesh.number_of_vertices());
-    println!("Number of faces: {}", mesh.number_of_faces());
-    println!("Number of edges: {}", mesh.number_of_edges());
-    println!("Euler characteristic: {}", mesh.euler());
-    
-    // Check if all vertices are on boundary (they should be for a simple polygon)
-    let boundary_vertices: Vec<usize> = mesh.vertex.keys().cloned().collect();
-    let boundary_count = boundary_vertices.iter()
-        .filter(|&&v| mesh.is_vertex_on_boundary(v))
-        .count();
-    println!("Vertices on boundary: {}/{}", boundary_count, mesh.number_of_vertices());
-    
-    // Test edge extraction
-    let edges = mesh.extract_edges_as_lines();
-    println!("Unique edges extracted: {}", edges.len());
-    
-    // Test JSON serialization
-    println!("\n=== Testing JSON Serialization ===");
-    
-    // Test simple serde_json serialization
-    match serde_json::to_string_pretty(&mesh) {
-        Ok(json_str) => {
-            println!("✅ JSON serialization successful!");
-            println!("JSON length: {} characters", json_str.len());
-            println!("First 200 characters of JSON:");
-            println!("{}", &json_str[..std::cmp::min(200, json_str.len())]);
-            
-            // Test deserialization
-            match serde_json::from_str::<Mesh>(&json_str) {
-                Ok(deserialized_mesh) => {
-                    println!("✅ JSON deserialization successful!");
-                    println!("Deserialized mesh has {} vertices and {} faces", 
-                             deserialized_mesh.number_of_vertices(), 
-                             deserialized_mesh.number_of_faces());
-                    
-                    // Verify the deserialized mesh matches the original
-                    if deserialized_mesh.number_of_vertices() == mesh.number_of_vertices() &&
-                       deserialized_mesh.number_of_faces() == mesh.number_of_faces() {
-                        println!("✅ Serialization/deserialization round-trip successful!");
-                    } else {
-                        println!("❌ Serialization/deserialization round-trip failed!");
-                    }
-                }
-                Err(e) => {
-                    println!("❌ JSON deserialization failed: {}", e);
-                }
-            }
-        }
-        Err(e) => {
-            println!("❌ JSON serialization failed: {}", e);
-        }
-    }
-    
-    // Test the custom json_dump/json_load functions
-    println!("\n=== Testing json_dump/json_load ===");
-    json_dump(&mesh, "star_mesh.json");
-    println!("✅ json_dump completed!");
-    
-    // Debug: Let's see what the JSON looks like
-    let json_content = std::fs::read_to_string("star_mesh.json").unwrap();
-    println!("JSON file size: {} characters", json_content.len());
-    println!("First 300 characters of JSON:");
-    println!("{}", &json_content[..std::cmp::min(300, json_content.len())]);
-    
-    let loaded_mesh = json_load::<Mesh>("star_mesh.json");
-    println!("✅ json_load successful!");
-    println!("Loaded mesh has {} vertices and {} faces", 
-             loaded_mesh.number_of_vertices(), 
-             loaded_mesh.number_of_faces());
-    
-    if loaded_mesh.number_of_vertices() == mesh.number_of_vertices() &&
-       loaded_mesh.number_of_faces() == mesh.number_of_faces() {
-        println!("✅ json_dump/json_load round-trip successful!");
-    } else {
-        println!("❌ json_dump/json_load round-trip failed!");
-    }
-    
-    println!("\n🎉 Star mesh with ear clipping triangulation works perfectly!");
-    println!("⭐ The {}-vertex star polygon was triangulated into {} triangles", 
-             mesh.number_of_vertices(), mesh.number_of_faces());
-    println!("🔗 The mesh has {} unique edges", edges.len());
-    
-    // Add the star mesh to AllGeometryData and save to all_geometry.json
-    println!("\n=== Adding Star Mesh to All Geometry ===");
-    
-    // Create AllGeometryData with the star mesh
+    let star = make_star_mesh();
+    let _sphere = Mesh::create_unit_sphere_high_res();
+    let cube = make_cube_mesh();
+    let dodecahedron = make_dodecahedron_mesh();
+    let point_cloud = make_point_cloud();
+    let lines = make_lines();
+    let arrows = make_arrows();
+
     let all_geometry = AllGeometryData {
         points: vec![],
         vectors: vec![],
-        lines: vec![],
+        lines, // Restore lines but without RGB axis lines
+        arrows,
         planes: vec![],
         colors: vec![],
-        point_clouds: vec![],
+        point_clouds: vec![point_cloud],
         line_clouds: vec![],
         plines: vec![],
         xforms: vec![],
-        meshes: vec![mesh.clone()], // Add the star mesh
+        meshes: vec![star, cube, dodecahedron], //sphere
+        mesh_instances: vec![],
+        pipe_mesh_index: None,
+        sphere_mesh_index: None,
     };
-    
-    // Save to all_geometry.json
-    json_dump(&all_geometry, "all_geometry.json");
-    println!("✅ Star mesh saved to all_geometry.json");
-    
-    // Test loading from all_geometry.json
-    let loaded_all_geometry = json_load::<AllGeometryData>("all_geometry.json");
-    println!("✅ Successfully loaded all_geometry.json");
-    println!("   Contains {} meshes", loaded_all_geometry.meshes.len());
-    if let Some(loaded_mesh) = loaded_all_geometry.meshes.first() {
-        println!("   Loaded mesh has {} vertices and {} faces", 
-                 loaded_mesh.number_of_vertices(), 
-                 loaded_mesh.number_of_faces());
-        if loaded_mesh.number_of_vertices() == mesh.number_of_vertices() &&
-           loaded_mesh.number_of_faces() == mesh.number_of_faces() {
-            println!("✅ All geometry round-trip successful!");
-        } else {
-            println!("❌ All geometry round-trip failed!");
-        }
-    }
-    
-    println!("💾 Star mesh is now serialized to all_geometry.json");
+
+    // Write deterministically next to this Cargo package (not dependent on current working dir)
+    let out_path = format!("{}/all_geometry.json", env!("CARGO_MANIFEST_DIR"));
+    let json_string = serde_json::to_string_pretty(&all_geometry).unwrap();
+    std::fs::write(&out_path, json_string).unwrap();
 }
- 
